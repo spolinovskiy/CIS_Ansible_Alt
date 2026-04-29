@@ -1,0 +1,197 @@
+---
+- name: Audit | Time Sync | Define placeholders and defaults
+  ansible.builtin.set_fact:
+    cis_time_sync_missing_information_placeholders:
+      - "MISSING_OT_BASELINE:approved_ntp_servers"
+      - "MISSING_OT_BASELINE:approved_ptp_profile_and_grandmaster_policy"
+      - "MISSING_OT_BASELINE:approved_domain_controller_time_source_policy"
+      - "MISSING_OT_BASELINE:approved_authoritative_time_source_policy"
+  changed_when: false
+  tags: [cis, audit, alt, time_sync, chapter_time_sync]
+
+- name: Audit | Time Sync | Collect package facts
+  ansible.builtin.package_facts:
+    manager: auto
+  changed_when: false
+  failed_when: false
+  tags: [cis, audit, alt, time_sync, chapter_time_sync]
+
+- name: Audit | Time Sync | 2.3.2.1 collect systemd-timesyncd authorized server config lines
+  ansible.builtin.shell: >
+    grep -RPs -- '^\s*(NTP|FallbackNTP)\s*=\s*\S+' /etc/systemd/timesyncd.conf /etc/systemd/timesyncd.conf.d/*.conf 2>/dev/null
+  register: cis_2_3_2_1_timesyncd_servers
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_2_3_2_1, audit, alt, time_sync, chapter_time_sync]
+
+- name: Audit | Time Sync | 2.3.2.2 collect systemd-timesyncd enabled state
+  ansible.builtin.command: systemctl is-enabled systemd-timesyncd.service
+  register: cis_2_3_2_2_timesyncd_enabled
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_2_3_2_2, audit, alt, time_sync, chapter_time_sync]
+
+- name: Audit | Time Sync | 2.3.2.2 collect systemd-timesyncd active state
+  ansible.builtin.command: systemctl is-active systemd-timesyncd.service
+  register: cis_2_3_2_2_timesyncd_active
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_2_3_2_2, audit, alt, time_sync, chapter_time_sync]
+
+- name: Audit | Time Sync | 2.3.3.1 collect chrony authorized server config lines
+  ansible.builtin.shell: >
+    grep -RPs -- '^\s*(server|pool|peer)\s+\S+' /etc/chrony.conf /etc/chrony/chrony.conf /etc/chrony/sources.d/*.sources 2>/dev/null
+  register: cis_2_3_3_1_chrony_servers
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_2_3_3_1, audit, alt, time_sync, chapter_time_sync]
+
+- name: Audit | Time Sync | 2.3.3.2 collect chronyd runtime users
+  ansible.builtin.shell: "ps -ef | awk '(/[c]hronyd/ && $1!=\"_chrony\") { print $1 }'"
+  register: cis_2_3_3_2_chronyd_non_chrony_users
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_2_3_3_2, audit, alt, time_sync, chapter_time_sync]
+
+- name: Audit | Time Sync | 2.3.3.3 collect chrony enabled state
+  ansible.builtin.command: systemctl is-enabled chrony.service
+  register: cis_2_3_3_3_chrony_enabled
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_2_3_3_3, audit, alt, time_sync, chapter_time_sync]
+
+- name: Audit | Time Sync | 2.3.3.3 collect chrony active state
+  ansible.builtin.command: systemctl is-active chrony.service
+  register: cis_2_3_3_3_chrony_active
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_2_3_3_3, audit, alt, time_sync, chapter_time_sync]
+
+- name: Audit | Time Sync | Build chapter summary facts
+  ansible.builtin.set_fact:
+    cis_time_sync_chapter:
+      chapter: "Time Sync"
+      sheet: "Time Sync"
+      implemented_controls:
+        - "2.3.1"
+        - "2.3.1.1"
+        - "2.3.2.1"
+        - "2.3.2.2"
+        - "2.3.3.1"
+        - "2.3.3.2"
+        - "2.3.3.3"
+      skipped_controls: []
+      manual_controls:
+        - "2.3.1"
+        - "2.3.1.1"
+        - "2.3.2.1"
+        - "2.3.3.1"
+      blocked_controls: []
+      high_risk_controls:
+        - "2.3.1"
+        - "2.3.1.1"
+        - "2.3.2.1"
+        - "2.3.2.2"
+        - "2.3.3.1"
+        - "2.3.3.2"
+        - "2.3.3.3"
+      missing_information_placeholders: "{{ cis_time_sync_missing_information_placeholders }}"
+      offline_assumptions:
+        - "Audit-only tasks use local command and local file reads only; no Internet access is required."
+        - "No time synchronization daemon installation, configuration remediation, restart, or reboot operations are executed."
+      os_tested:
+        distribution: "{{ ansible_distribution | default('unknown') }}"
+        version: "{{ ansible_distribution_version | default('unknown') }}"
+        kernel: "{{ ansible_kernel | default('unknown') }}"
+      commands:
+        - "grep NTP/FallbackNTP in /etc/systemd/timesyncd.conf and /etc/systemd/timesyncd.conf.d/*.conf"
+        - "systemctl is-enabled systemd-timesyncd.service"
+        - "systemctl is-active systemd-timesyncd.service"
+        - "grep server/pool/peer in /etc/chrony.conf /etc/chrony/chrony.conf /etc/chrony/sources.d/*.sources"
+        - "ps -ef | awk '(/[c]hronyd/ && $1!=\"_chrony\") { print $1 }'"
+        - "systemctl is-enabled chrony.service"
+        - "systemctl is-active chrony.service"
+      evidence_records:
+        - control_id: "2.3.1"
+          title: "Ensure time synchronization is in use"
+          status: "{{ 'manual' if (cis_timesyncd_in_use or cis_chrony_in_use) else 'fail' }}"
+          daemon_in_use:
+            systemd_timesyncd: "{{ cis_timesyncd_in_use }}"
+            chrony: "{{ cis_chrony_in_use }}"
+          placeholders:
+            - "MISSING_OT_BASELINE:approved_authoritative_time_source_policy"
+        - control_id: "2.3.1.1"
+          title: "Ensure a single time synchronization daemon is in use"
+          status: "{{ 'manual' if ((1 if cis_timesyncd_in_use else 0) + (1 if cis_chrony_in_use else 0) == 1) else 'fail' }}"
+          daemon_in_use:
+            systemd_timesyncd: "{{ cis_timesyncd_in_use }}"
+            chrony: "{{ cis_chrony_in_use }}"
+        - control_id: "2.3.2.1"
+          title: "Ensure systemd-timesyncd configured with authorized timeserver"
+          status: "{{ 'manual' if cis_2_3_2_1_timesyncd_servers.rc in [0, 1] else 'blocked' }}"
+          register: "cis_2_3_2_1_timesyncd_servers"
+          findings: "{{ cis_2_3_2_1_timesyncd_servers.stdout_lines | default([]) }}"
+          placeholders:
+            - "MISSING_OT_BASELINE:approved_ntp_servers"
+            - "MISSING_OT_BASELINE:approved_domain_controller_time_source_policy"
+            - "MISSING_OT_BASELINE:approved_authoritative_time_source_policy"
+        - control_id: "2.3.2.2"
+          title: "Ensure systemd-timesyncd is enabled and running"
+          status: "{{ 'pass' if ((cis_2_3_2_2_timesyncd_enabled.stdout | default('') | trim) == 'enabled' and (cis_2_3_2_2_timesyncd_active.stdout | default('') | trim) == 'active') else ('fail' if (cis_2_3_2_2_timesyncd_enabled.rc in [0,1,3,4] and cis_2_3_2_2_timesyncd_active.rc in [0,1,3,4]) else 'blocked') }}"
+          registers:
+            - "cis_2_3_2_2_timesyncd_enabled"
+            - "cis_2_3_2_2_timesyncd_active"
+          enabled: "{{ cis_2_3_2_2_timesyncd_enabled.stdout | default('') | trim }}"
+          active: "{{ cis_2_3_2_2_timesyncd_active.stdout | default('') | trim }}"
+        - control_id: "2.3.3.1"
+          title: "Ensure chrony is configured with authorized timeserver"
+          status: "{{ 'manual' if cis_2_3_3_1_chrony_servers.rc in [0, 1] else 'blocked' }}"
+          register: "cis_2_3_3_1_chrony_servers"
+          findings: "{{ cis_2_3_3_1_chrony_servers.stdout_lines | default([]) }}"
+          placeholders:
+            - "MISSING_OT_BASELINE:approved_ntp_servers"
+            - "MISSING_OT_BASELINE:approved_ptp_profile_and_grandmaster_policy"
+            - "MISSING_OT_BASELINE:approved_domain_controller_time_source_policy"
+            - "MISSING_OT_BASELINE:approved_authoritative_time_source_policy"
+        - control_id: "2.3.3.2"
+          title: "Ensure chrony is running as user _chrony"
+          status: "{{ 'pass' if (cis_2_3_3_2_chronyd_non_chrony_users.stdout | default('') | trim) == '' else ('fail' if cis_2_3_3_2_chronyd_non_chrony_users.rc in [0, 1] else 'blocked') }}"
+          register: "cis_2_3_3_2_chronyd_non_chrony_users"
+          findings: "{{ cis_2_3_3_2_chronyd_non_chrony_users.stdout_lines | default([]) }}"
+        - control_id: "2.3.3.3"
+          title: "Ensure chrony is enabled and running"
+          status: "{{ 'pass' if ((cis_2_3_3_3_chrony_enabled.stdout | default('') | trim) == 'enabled' and (cis_2_3_3_3_chrony_active.stdout | default('') | trim) == 'active') else ('fail' if (cis_2_3_3_3_chrony_enabled.rc in [0,1,3,4] and cis_2_3_3_3_chrony_active.rc in [0,1,3,4]) else 'blocked') }}"
+          registers:
+            - "cis_2_3_3_3_chrony_enabled"
+            - "cis_2_3_3_3_chrony_active"
+          enabled: "{{ cis_2_3_3_3_chrony_enabled.stdout | default('') | trim }}"
+          active: "{{ cis_2_3_3_3_chrony_active.stdout | default('') | trim }}"
+      result_summary:
+        - control_id: "2.3.1"
+          title: "Ensure time synchronization is in use"
+          status: "{{ 'manual_review_required' if (cis_timesyncd_in_use or cis_chrony_in_use) else 'fail' }}"
+        - control_id: "2.3.1.1"
+          title: "Ensure a single time synchronization daemon is in use"
+          status: "{{ 'manual_review_required' if ((1 if cis_timesyncd_in_use else 0) + (1 if cis_chrony_in_use else 0) == 1) else 'fail' }}"
+        - control_id: "2.3.2.1"
+          title: "Ensure systemd-timesyncd configured with authorized timeserver"
+          status: "{{ 'manual_review_required' if cis_2_3_2_1_timesyncd_servers.rc in [0, 1] else 'blocked' }}"
+        - control_id: "2.3.2.2"
+          title: "Ensure systemd-timesyncd is enabled and running"
+          status: "{{ 'pass' if ((cis_2_3_2_2_timesyncd_enabled.stdout | default('') | trim) == 'enabled' and (cis_2_3_2_2_timesyncd_active.stdout | default('') | trim) == 'active') else ('fail' if (cis_2_3_2_2_timesyncd_enabled.rc in [0,1,3,4] and cis_2_3_2_2_timesyncd_active.rc in [0,1,3,4]) else 'blocked') }}"
+        - control_id: "2.3.3.1"
+          title: "Ensure chrony is configured with authorized timeserver"
+          status: "{{ 'manual_review_required' if cis_2_3_3_1_chrony_servers.rc in [0, 1] else 'blocked' }}"
+        - control_id: "2.3.3.2"
+          title: "Ensure chrony is running as user _chrony"
+          status: "{{ 'pass' if (cis_2_3_3_2_chronyd_non_chrony_users.stdout | default('') | trim) == '' else ('fail' if cis_2_3_3_2_chronyd_non_chrony_users.rc in [0, 1] else 'blocked') }}"
+        - control_id: "2.3.3.3"
+          title: "Ensure chrony is enabled and running"
+          status: "{{ 'pass' if ((cis_2_3_3_3_chrony_enabled.stdout | default('') | trim) == 'enabled' and (cis_2_3_3_3_chrony_active.stdout | default('') | trim) == 'active') else ('fail' if (cis_2_3_3_3_chrony_enabled.rc in [0,1,3,4] and cis_2_3_3_3_chrony_active.rc in [0,1,3,4]) else 'blocked') }}"
+  vars:
+    cis_timesyncd_installed: "{{ 'systemd-timesyncd' in (ansible_facts.packages | default({})) }}"
+    cis_chrony_installed: "{{ 'chrony' in (ansible_facts.packages | default({})) }}"
+    cis_timesyncd_in_use: "{{ cis_timesyncd_installed and ((cis_2_3_2_2_timesyncd_active.stdout | default('') | trim) == 'active') }}"
+    cis_chrony_in_use: "{{ cis_chrony_installed and ((cis_2_3_3_3_chrony_active.stdout | default('') | trim) == 'active') }}"
+  changed_when: false
+  tags: [cis, audit, alt, time_sync, chapter_time_sync]

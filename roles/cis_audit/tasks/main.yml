@@ -53,3 +53,8 @@
   ansible.builtin.include_tasks:
     file: filesystem.yml
   tags: [cis, audit, alt, filesystem, chapter_filesystem]
+
+- name: Audit | Time Sync | Include chapter controls
+  ansible.builtin.include_tasks:
+    file: time_sync.yml
+  tags: [cis, audit, alt, time_sync, chapter_time_sync]
