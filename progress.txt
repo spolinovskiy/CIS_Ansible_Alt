@@ -178,3 +178,4 @@
 - Created reports/lab/LocalUsersAndGroups/chapter_report.md with required sections and exact approval line.
 - Updated only ALT-1006 in PRD.json to ready_for_engineer_review with technical_passes=true, passes=false, and engineer_approval_status=pending.
 - Validation: PRD script passed locally; ansible-playbook is not installed on this workstation, so syntax-check/play execution is pending in an Ansible-enabled environment.
+2026-04-29T10:10:00Z PRD scheduler normalization + private overlay model: marked approved implementation tasks as done to align with completed engineer-approval gates (ALT-1003/1004/1005 and ALT-3003), and implemented universal sensitive-data approach with gitignored private overlays, optional vault-ready file loading in cis_common, and documented strategy/templates for non-GitHub OT data.
