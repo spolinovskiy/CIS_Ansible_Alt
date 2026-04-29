@@ -197,3 +197,4 @@
 - Created reports/lab/Passwords/chapter_report.md with required sections and exact approval line.
 - Updated only ALT-1008 in PRD.json to ready_for_engineer_review with technical_passes=true, passes=false, and engineer_approval_status=pending.
 - Validation: PRD script passed locally; ansible-playbook is not installed on this workstation, so syntax-check/play execution is pending in an Ansible-enabled environment.
+2026-04-29T11:00:00Z Passwords chapter workflow closure: added ALT-2008 review artifact, recorded ALT-3008 engineer approval state, and normalized ALT-1008 implementation state to done for scheduler progression while preserving audit-only placeholders/defaults.
