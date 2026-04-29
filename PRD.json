@@ -1182,14 +1182,16 @@
         "ALT-0005",
         "ALT-3009"
       ],
-      "status": "todo",
-      "technical_passes": false,
+      "status": "ready_for_engineer_review",
+      "technical_passes": true,
       "engineer_approval_required": true,
       "engineer_approval_status": "pending",
       "passes": false,
-      "evidence_files": [],
-      "updated_at": "2026-04-27T21:26:35Z",
-      "comments": "Implement only controls present in linux_cis.xlsx sheet Process Hardening; detected 3 Ensure control rows and 1 group header rows. Stop at ready_for_engineer_review after chapter report."
+      "evidence_files": [
+        "reports/lab/ProcessHardening/chapter_report.md"
+      ],
+      "updated_at": "2026-04-29T19:30:00Z",
+      "comments": "Implemented audit-only Process Hardening controls from linux_cis.xlsx scope (1.5.1, 1.5.2, 1.5.3); group header excluded; ready for engineer review with OT placeholders retained."
     },
     {
       "task_id": "ALT-2010",

@@ -22,7 +22,8 @@
       {{
         [
           (cis_sudo_chapter | default({})),
-          (cis_bootloader_chapter | default({}))
+          (cis_bootloader_chapter | default({})),
+          (cis_process_hardening_chapter | default({}))
         ] | select('mapping') | reject('equalto', {}) | list
       }}
   changed_when: false

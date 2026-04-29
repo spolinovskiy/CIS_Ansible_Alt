@@ -1,0 +1,106 @@
+---
+- name: Audit | Process Hardening | Define placeholders and defaults
+  ansible.builtin.set_fact:
+    cis_ph_ptrace_scope_allowed_values: "{{ cis_ph_ptrace_scope_allowed_values | default(['1']) }}"
+    cis_ph_core_dump_exceptions: "{{ cis_ph_core_dump_exceptions | default([]) }}"
+    cis_ph_missing_information_placeholders:
+      - "MISSING_OT_BASELINE:approved_ptrace_scope_allowed_values"
+      - "MISSING_OT_BASELINE:approved_core_dump_exception_identities"
+  changed_when: false
+  tags: [cis, audit, alt, process_hardening, chapter_process_hardening]
+
+- name: Audit | Process Hardening | 1.5.1 collect kernel.randomize_va_space runtime value
+  ansible.builtin.command: "sysctl -n kernel.randomize_va_space"
+  register: cis_1_5_1_aslr_runtime
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_1_5_1, audit, alt, process_hardening, chapter_process_hardening]
+
+- name: Audit | Process Hardening | 1.5.2 collect kernel.yama.ptrace_scope runtime value
+  ansible.builtin.command: "sysctl -n kernel.yama.ptrace_scope"
+  register: cis_1_5_2_ptrace_scope_runtime
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_1_5_2, audit, alt, process_hardening, chapter_process_hardening]
+
+- name: Audit | Process Hardening | 1.5.3 collect fs.suid_dumpable runtime value
+  ansible.builtin.command: "sysctl -n fs.suid_dumpable"
+  register: cis_1_5_3_suid_dumpable_runtime
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_1_5_3, audit, alt, process_hardening, chapter_process_hardening]
+
+- name: Audit | Process Hardening | 1.5.3 collect hard core limits entries
+  ansible.builtin.shell: >
+    grep -RPs -- '^\s*\*?\s*hard\s+core\s+0(\s|$)' /etc/security/limits.conf /etc/security/limits.d 2>/dev/null
+  register: cis_1_5_3_core_limits
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_1_5_3, audit, alt, process_hardening, chapter_process_hardening]
+
+- name: Audit | Process Hardening | Build chapter summary facts
+  ansible.builtin.set_fact:
+    cis_process_hardening_chapter:
+      chapter: "Process Hardening"
+      sheet: "Process Hardening"
+      implemented_controls:
+        - "1.5.1"
+        - "1.5.2"
+        - "1.5.3"
+      skipped_controls: []
+      manual_controls:
+        - "1.5.1"
+        - "1.5.2"
+      blocked_controls: []
+      high_risk_controls:
+        - "1.5.1"
+        - "1.5.2"
+        - "1.5.3"
+      missing_information_placeholders: "{{ cis_ph_missing_information_placeholders }}"
+      offline_assumptions:
+        - "Audit-only tasks use local sysctl and local file reads only; no Internet access is required."
+        - "No kernel parameter, limits, or process behavior remediation is performed."
+      os_tested:
+        distribution: "{{ ansible_distribution | default('unknown') }}"
+        version: "{{ ansible_distribution_version | default('unknown') }}"
+        kernel: "{{ ansible_kernel | default('unknown') }}"
+      commands:
+        - "sysctl -n kernel.randomize_va_space"
+        - "sysctl -n kernel.yama.ptrace_scope"
+        - "sysctl -n fs.suid_dumpable"
+        - "grep hard core 0 in /etc/security/limits.conf and /etc/security/limits.d"
+      evidence_records:
+        - control_id: "1.5.1"
+          title: "Ensure address space layout randomization is enabled"
+          status: "{{ 'manual' if cis_1_5_1_aslr_runtime.rc == 0 else 'blocked' }}"
+          register: "cis_1_5_1_aslr_runtime"
+          value: "{{ cis_1_5_1_aslr_runtime.stdout | default('') | trim }}"
+        - control_id: "1.5.2"
+          title: "Ensure ptrace_scope is restricted"
+          status: "{{ 'manual' if cis_1_5_2_ptrace_scope_runtime.rc == 0 else 'blocked' }}"
+          register: "cis_1_5_2_ptrace_scope_runtime"
+          value: "{{ cis_1_5_2_ptrace_scope_runtime.stdout | default('') | trim }}"
+          placeholders:
+            - "MISSING_OT_BASELINE:approved_ptrace_scope_allowed_values"
+        - control_id: "1.5.3"
+          title: "Ensure core dumps are restricted"
+          status: "{{ 'pass' if ((cis_1_5_3_suid_dumpable_runtime.stdout | default('') | trim) == '0' and (cis_1_5_3_core_limits.rc == 0)) else ('fail' if (cis_1_5_3_suid_dumpable_runtime.rc in [0, 1] and cis_1_5_3_core_limits.rc in [0, 1]) else 'blocked') }}"
+          registers:
+            - "cis_1_5_3_suid_dumpable_runtime"
+            - "cis_1_5_3_core_limits"
+          runtime_value: "{{ cis_1_5_3_suid_dumpable_runtime.stdout | default('') | trim }}"
+          limits_matches: "{{ cis_1_5_3_core_limits.stdout_lines | default([]) }}"
+          placeholders:
+            - "MISSING_OT_BASELINE:approved_core_dump_exception_identities"
+      result_summary:
+        - control_id: "1.5.1"
+          title: "Ensure address space layout randomization is enabled"
+          status: "{{ 'manual_review_required' if cis_1_5_1_aslr_runtime.rc == 0 else 'blocked' }}"
+        - control_id: "1.5.2"
+          title: "Ensure ptrace_scope is restricted"
+          status: "{{ 'manual_review_required' if cis_1_5_2_ptrace_scope_runtime.rc == 0 else 'blocked' }}"
+        - control_id: "1.5.3"
+          title: "Ensure core dumps are restricted"
+          status: "{{ 'pass' if ((cis_1_5_3_suid_dumpable_runtime.stdout | default('') | trim) == '0' and (cis_1_5_3_core_limits.rc == 0)) else ('fail' if (cis_1_5_3_suid_dumpable_runtime.rc in [0, 1] and cis_1_5_3_core_limits.rc in [0, 1]) else 'blocked') }}"
+  changed_when: false
+  tags: [cis, audit, alt, process_hardening, chapter_process_hardening]

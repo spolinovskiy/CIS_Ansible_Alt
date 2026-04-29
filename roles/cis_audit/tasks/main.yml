@@ -43,3 +43,8 @@
   ansible.builtin.include_tasks:
     file: root_system_accounts.yml
   tags: [cis, audit, alt, root_system_accounts, chapter_root_system_accounts]
+
+- name: Audit | Process Hardening | Include chapter controls
+  ansible.builtin.include_tasks:
+    file: process_hardening.yml
+  tags: [cis, audit, alt, process_hardening, chapter_process_hardening]

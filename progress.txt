@@ -200,3 +200,10 @@
 2026-04-29T11:00:00Z Passwords chapter workflow closure: added ALT-2008 review artifact, recorded ALT-3008 engineer approval state, and normalized ALT-1008 implementation state to done for scheduler progression while preserving audit-only placeholders/defaults.
 2026-04-29T19:09:39Z ALT-1009 done: implemented audit-only Root&System Accounts controls (5.4.2.1-5.4.3.3) from linux_cis.xlsx scope; added chapter include and roles/cis_audit/tasks/root_system_accounts.yml with read-only evidence collection, changed_when=false, no remediation; added reports/lab/RootSystemAccounts/chapter_report.md with OT baseline placeholders and engineer-approval gate.
 2026-04-29T11:20:00Z Root&System Accounts chapter workflow closure: added ALT-2009 review artifact, recorded ALT-3009 engineer approval state, and normalized ALT-1009 implementation state to done for scheduler progression while preserving audit-only placeholders/defaults.
+[2026-04-29T19:30:00Z] ALT-1010 Implement audit-only CIS chapter/group Process Hardening for ALT Linux
+- Implemented only Process Hardening control rows from linux_cis.xlsx sheet Process Hardening: 1.5.1, 1.5.2, 1.5.3; group header rows were intentionally excluded.
+- Added Process Hardening chapter include in roles/cis_audit/tasks/main.yml and created roles/cis_audit/tasks/process_hardening.yml.
+- Implemented audit-only checks with changed_when=false and no remediation actions; collected per-control evidence and chapter summary facts in cis_process_hardening_chapter.
+- Kept OT baseline placeholders for ptrace scope and core-dump exception baselines.
+- Created reports/lab/ProcessHardening/chapter_report.md with required scope/status/safety/evidence/result sections and approval gate line.
+- Updated only ALT-1010 in PRD.json to ready_for_engineer_review with technical_passes=true and passes=false.
