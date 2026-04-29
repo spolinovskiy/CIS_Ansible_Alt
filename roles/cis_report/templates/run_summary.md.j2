@@ -1,0 +1,24 @@
+# ALT CIS Run Summary
+
+- Run ID: {{ cis_report_run_manifest.metadata.run_id }}
+- Generated (UTC): {{ cis_report_run_manifest.metadata.generated_at_utc }}
+- Environment: {{ cis_report_run_manifest.metadata.environment }}
+- Scope Source: {{ cis_report_run_manifest.metadata.source_scope }}
+- Total Hosts: {{ cis_report_run_manifest.hosts.total_hosts }}
+
+## Aggregated Totals
+
+- Total Scoped Controls: {{ cis_report_run_manifest.totals.total_scoped_controls }}
+- Pass: {{ cis_report_run_manifest.totals.pass }}
+- Fail: {{ cis_report_run_manifest.totals.fail }}
+- Blocked: {{ cis_report_run_manifest.totals.blocked }}
+- Manual: {{ cis_report_run_manifest.totals.manual }}
+- Needs Scope Clarification: {{ cis_report_run_manifest.totals.needs_scope_clarification }}
+- Not Assessed: {{ cis_report_run_manifest.totals.not_assessed }}
+
+## Per-Host Summary
+
+| Host | Address | Total | Pass | Fail | Blocked | Manual | Needs Scope Clarification | Not Assessed |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+{% for item in (cis_report_run_manifest.host_results | default([])) %}| {{ item.inventory_hostname }} | {{ item.ansible_host }} | {{ item.summary.total_scoped_controls }} | {{ item.summary.pass }} | {{ item.summary.fail }} | {{ item.summary.blocked }} | {{ item.summary.manual }} | {{ item.summary.needs_scope_clarification }} | {{ item.summary.not_assessed }} |
+{% endfor %}

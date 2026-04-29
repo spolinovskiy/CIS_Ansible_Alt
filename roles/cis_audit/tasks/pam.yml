@@ -1,0 +1,157 @@
+---
+- name: Audit | PAM | Initialize chapter tracking
+  ansible.builtin.set_fact:
+    cis_pam_evidence_records: []
+    cis_pam_result_summary: []
+  changed_when: false
+  tags: [cis, audit, alt, pam, chapter_pam]
+
+- name: Audit | PAM | Gather package facts
+  ansible.builtin.package_facts:
+    manager: auto
+  register: cis_pam_package_facts
+  changed_when: false
+  tags: [cis, audit, alt, pam, chapter_pam]
+
+- name: Audit | PAM | 5.3.1.1 | Record evidence
+  ansible.builtin.set_fact:
+    cis_pam_evidence_records: "{{ cis_pam_evidence_records + [ {'control_id': '5.3.1.1', 'title': 'Ensure latest version of pam is installed', 'status': ('pass' if (ansible_facts.packages.pam is defined and (ansible_facts.packages.pam | length) > 0) else 'fail'), 'register': 'cis_pam_package_facts'} ] }}"
+    cis_pam_result_summary: "{{ cis_pam_result_summary + [ {'control_id': '5.3.1.1', 'status': ('pass' if (ansible_facts.packages.pam is defined and (ansible_facts.packages.pam | length) > 0) else 'fail')} ] }}"
+  changed_when: false
+  tags: [cis, cis_5_3_1_1, audit, alt, pam, chapter_pam]
+
+- name: Audit | PAM | 5.3.1.2 | Record evidence
+  ansible.builtin.set_fact:
+    cis_pam_evidence_records: "{{ cis_pam_evidence_records + [ {'control_id': '5.3.1.2', 'title': 'Ensure libpam-modules is installed', 'status': ('pass' if (ansible_facts.packages['libpam-modules'] is defined and (ansible_facts.packages['libpam-modules'] | length) > 0) else 'fail'), 'register': 'cis_pam_package_facts'} ] }}"
+    cis_pam_result_summary: "{{ cis_pam_result_summary + [ {'control_id': '5.3.1.2', 'status': ('pass' if (ansible_facts.packages['libpam-modules'] is defined and (ansible_facts.packages['libpam-modules'] | length) > 0) else 'fail')} ] }}"
+  changed_when: false
+  tags: [cis, cis_5_3_1_2, audit, alt, pam, chapter_pam]
+
+- name: Audit | PAM | 5.3.1.3 | Record evidence
+  ansible.builtin.set_fact:
+    cis_pam_evidence_records: "{{ cis_pam_evidence_records + [ {'control_id': '5.3.1.3', 'title': 'Ensure libpam-pwquality is installed', 'status': ('pass' if (ansible_facts.packages['libpam-pwquality'] is defined and (ansible_facts.packages['libpam-pwquality'] | length) > 0) else 'fail'), 'register': 'cis_pam_package_facts'} ] }}"
+    cis_pam_result_summary: "{{ cis_pam_result_summary + [ {'control_id': '5.3.1.3', 'status': ('pass' if (ansible_facts.packages['libpam-pwquality'] is defined and (ansible_facts.packages['libpam-pwquality'] | length) > 0) else 'fail')} ] }}"
+  changed_when: false
+  tags: [cis, cis_5_3_1_3, audit, alt, pam, chapter_pam]
+
+- name: Audit | PAM | Run module/argument checks
+  ansible.builtin.shell: "{{ item.cmd }}"
+  loop:
+    - { id: '5.3.2.1', title: 'Ensure pam_unix module is enabled', cmd: "grep -RPs -- 'pam_unix\\.so' /etc/pam.d 2>/dev/null" }
+    - { id: '5.3.2.2', title: 'Ensure pam_faillock module is enabled', cmd: "grep -RPs -- 'pam_faillock\\.so' /etc/pam.d 2>/dev/null" }
+    - { id: '5.3.2.3', title: 'Ensure pam_pwquality module is enabled', cmd: "grep -RPs -- 'pam_pwquality\\.so' /etc/pam.d 2>/dev/null" }
+    - { id: '5.3.2.4', title: 'Ensure pam_pwhistory module is enabled', cmd: "grep -RPs -- 'pam_pwhistory\\.so' /etc/pam.d 2>/dev/null" }
+    - { id: '5.3.3.1.1', title: 'Ensure password failed attempts lockout is configured', cmd: "grep -RPs -- '(deny\\s*=\\s*[1-9]|\\bdeny=[1-9])' /etc/security/faillock.conf /etc/pam.d 2>/dev/null" }
+    - { id: '5.3.3.1.2', title: 'Ensure password unlock time is configured', cmd: "grep -RPs -- '(unlock_time\\s*=\\s*[0-9]+|\\bunlock_time=[0-9]+)' /etc/security/faillock.conf /etc/pam.d 2>/dev/null" }
+    - { id: '5.3.3.1.3', title: 'Ensure password failed attempts lockout includes root account', cmd: "grep -RPs -- '(even_deny_root|root_unlock_time)' /etc/security/faillock.conf /etc/pam.d 2>/dev/null" }
+    - { id: '5.3.3.2.1', title: 'Ensure password number of changed characters is configured', cmd: "grep -RPs -- '(difok\\s*=\\s*[1-9]|\\bdifok=[1-9])' /etc/security/pwquality.conf /etc/pam.d 2>/dev/null" }
+    - { id: '5.3.3.2.2', title: 'Ensure minimum password length is configured', cmd: "grep -RPs -- '(minlen\\s*=\\s*[1-9][0-9]*|\\bminlen=[1-9][0-9]*)' /etc/security/pwquality.conf /etc/pam.d 2>/dev/null" }
+    - { id: '5.3.3.2.4', title: 'Ensure password same consecutive characters is configured', cmd: "grep -RPs -- '(maxrepeat\\s*=\\s*[1-9][0-9]*|\\bmaxrepeat=[1-9][0-9]*)' /etc/security/pwquality.conf /etc/pam.d 2>/dev/null" }
+    - { id: '5.3.3.2.5', title: 'Ensure password maximum sequential characters is configured', cmd: "grep -RPs -- '(maxsequence\\s*=\\s*[1-9][0-9]*|\\bmaxsequence=[1-9][0-9]*)' /etc/security/pwquality.conf /etc/pam.d 2>/dev/null" }
+    - { id: '5.3.3.2.6', title: 'Ensure password dictionary check is enabled', cmd: "grep -RPs -- '(dictcheck\\s*=\\s*1|\\bdictcheck=1)' /etc/security/pwquality.conf /etc/pam.d 2>/dev/null" }
+    - { id: '5.3.3.2.7', title: 'Ensure password quality checking is enforced', cmd: "grep -RPs -- '(enforcing\\s*=\\s*1|\\benforcing=1)' /etc/security/pwquality.conf /etc/pam.d 2>/dev/null" }
+    - { id: '5.3.3.2.8', title: 'Ensure password quality is enforced for the root user', cmd: "grep -RPs -- '(enforce_for_root)' /etc/security/pwquality.conf /etc/pam.d 2>/dev/null" }
+    - { id: '5.3.3.3.1', title: 'Ensure password history remember is configured', cmd: "grep -RPs -- '(remember\\s*=\\s*[1-9][0-9]*|\\bremember=[1-9][0-9]*)' /etc/security/pwhistory.conf /etc/pam.d 2>/dev/null" }
+    - { id: '5.3.3.3.2', title: 'Ensure password history is enforced for the root user', cmd: "grep -RPs -- '(enforce_for_root)' /etc/security/pwhistory.conf /etc/pam.d 2>/dev/null" }
+    - { id: '5.3.3.3.3', title: 'Ensure pam_pwhistory includes use_authtok', cmd: "grep -RPs -- 'pam_pwhistory\\.so.*use_authtok' /etc/pam.d 2>/dev/null" }
+    - { id: '5.3.3.4.1', title: 'Ensure pam_unix does not include nullok', cmd: "grep -RPs -- 'pam_unix\\.so.*nullok' /etc/pam.d 2>/dev/null" }
+    - { id: '5.3.3.4.2', title: 'Ensure pam_unix does not include remember', cmd: "grep -RPs -- 'pam_unix\\.so.*remember' /etc/pam.d 2>/dev/null" }
+    - { id: '5.3.3.4.3', title: 'Ensure pam_unix includes a strong password hashing algorithm', cmd: "grep -RPs -- 'pam_unix\\.so.*(sha512|yescrypt)' /etc/pam.d 2>/dev/null" }
+    - { id: '5.3.3.4.4', title: 'Ensure pam_unix includes use_authtok', cmd: "grep -RPs -- 'pam_unix\\.so.*use_authtok' /etc/pam.d 2>/dev/null" }
+  register: cis_pam_argument_checks
+  failed_when: false
+  changed_when: false
+  tags: [cis, audit, alt, pam, chapter_pam]
+
+- name: Audit | PAM | Record evidence for module/argument controls
+  ansible.builtin.set_fact:
+    cis_pam_evidence_records: "{{ cis_pam_evidence_records + [ {'control_id': item.item.id, 'title': item.item.title, 'status': (('pass' if item.rc == 0 else 'fail') if item.item.id not in ['5.3.3.4.1', '5.3.3.4.2'] else ('pass' if item.rc == 1 else ('fail' if item.rc == 0 else 'blocked'))), 'register': 'cis_pam_argument_checks'} ] }}"
+    cis_pam_result_summary: "{{ cis_pam_result_summary + [ {'control_id': item.item.id, 'status': (('pass' if item.rc == 0 else 'fail') if item.item.id not in ['5.3.3.4.1', '5.3.3.4.2'] else ('pass' if item.rc == 1 else ('fail' if item.rc == 0 else 'blocked')))} ] }}"
+  loop: "{{ cis_pam_argument_checks.results }}"
+  changed_when: false
+  tags: [cis, audit, alt, pam, chapter_pam]
+
+- name: Audit | PAM | 5.3.3.2.3 | Record manual evidence marker
+  ansible.builtin.set_fact:
+    cis_pam_evidence_records: "{{ cis_pam_evidence_records + [ {'control_id': '5.3.3.2.3', 'title': 'Ensure password complexity is configured (Manual)', 'status': 'manual', 'register': 'cis_pam_argument_checks'} ] }}"
+    cis_pam_result_summary: "{{ cis_pam_result_summary + [ {'control_id': '5.3.3.2.3', 'status': 'manual'} ] }}"
+  changed_when: false
+  tags: [cis, cis_5_3_3_2_3, audit, alt, pam, chapter_pam]
+
+- name: Audit | PAM | Build chapter summary facts
+  ansible.builtin.set_fact:
+    cis_pam_chapter:
+      chapter: PAM
+      sheet: PAM
+      implemented_controls:
+        - "5.3.1.1"
+        - "5.3.1.2"
+        - "5.3.1.3"
+        - "5.3.2.1"
+        - "5.3.2.2"
+        - "5.3.2.3"
+        - "5.3.2.4"
+        - "5.3.3.1.1"
+        - "5.3.3.1.2"
+        - "5.3.3.1.3"
+        - "5.3.3.2.1"
+        - "5.3.3.2.2"
+        - "5.3.3.2.3"
+        - "5.3.3.2.4"
+        - "5.3.3.2.5"
+        - "5.3.3.2.6"
+        - "5.3.3.2.7"
+        - "5.3.3.2.8"
+        - "5.3.3.3.1"
+        - "5.3.3.3.2"
+        - "5.3.3.3.3"
+        - "5.3.3.4.1"
+        - "5.3.3.4.2"
+        - "5.3.3.4.3"
+        - "5.3.3.4.4"
+      skipped_controls: []
+      manual_controls:
+        - "5.3.3.2.3"
+      blocked_controls: "{{ cis_pam_result_summary | selectattr('status', 'equalto', 'blocked') | map(attribute='control_id') | list }}"
+      high_risk_controls:
+        - "5.3.1.1"
+        - "5.3.1.2"
+        - "5.3.1.3"
+        - "5.3.2.1"
+        - "5.3.2.2"
+        - "5.3.2.3"
+        - "5.3.2.4"
+        - "5.3.3.1.1"
+        - "5.3.3.1.2"
+        - "5.3.3.1.3"
+        - "5.3.3.2.1"
+        - "5.3.3.2.2"
+        - "5.3.3.2.3"
+        - "5.3.3.2.4"
+        - "5.3.3.2.5"
+        - "5.3.3.2.6"
+        - "5.3.3.2.7"
+        - "5.3.3.2.8"
+        - "5.3.3.3.1"
+        - "5.3.3.3.2"
+        - "5.3.3.3.3"
+        - "5.3.3.4.1"
+        - "5.3.3.4.2"
+        - "5.3.3.4.3"
+        - "5.3.3.4.4"
+      offline_assumptions:
+        - "Audit-only tasks use local package facts and local PAM/security file grep checks only; no Internet access is required."
+        - "No PAM remediation or auth stack modification is performed in this task."
+        - "Temporary/default PAM baseline assumptions are inherited and must be replaced with environment-approved values before enforcement decisions."
+      os_tested:
+        distribution: "{{ ansible_distribution | default('unknown') }}"
+        version: "{{ ansible_distribution_version | default('unknown') }}"
+        kernel: "{{ ansible_kernel | default('unknown') }}"
+      commands:
+        - "package_facts manager=auto"
+        - "grep -RPs 'pam_unix.so|pam_faillock.so|pam_pwquality.so|pam_pwhistory.so' /etc/pam.d"
+        - "grep -RPs PAM argument checks in /etc/pam.d and /etc/security/{faillock,pwquality,pwhistory}.conf"
+      evidence_records: "{{ cis_pam_evidence_records }}"
+      result_summary: "{{ cis_pam_result_summary }}"
+  changed_when: false
+  tags: [cis, audit, alt, pam, chapter_pam]

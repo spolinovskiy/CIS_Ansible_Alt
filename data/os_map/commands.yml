@@ -1,0 +1,69 @@
+---
+metadata:
+  schema_version: canonical-os-map-v1
+  project_os: alt
+  generated_by_task: ALT-0005
+  generated_at: "2026-04-28T00:00:00Z"
+  evidence_level: mapping_only_not_lab_tested
+
+project_os: alt
+command_policy:
+  audit_commands_read_only: true
+  remediation_commands_require_guards:
+    - remediation_enabled
+    - engineer_approval_recorded
+  package_commands_require_guards:
+    - remediation_enabled
+    - package_install_allowed
+    - local_repository_defined
+  shell_preference: "Use Ansible built-in modules first; use command/shell only for read-only evidence or where no safe module exists."
+
+commands:
+  facts:
+    os_release: { command: "cat /etc/os-release", status: candidate_unverified, changed_when: false }
+    kernel: { command: "uname -r", status: candidate_unverified, changed_when: false }
+  packages:
+    rpm_query: { command: "rpm -q <package>", status: candidate_unverified, changed_when: false }
+    rpm_query_all: { command: "rpm -qa", status: candidate_unverified, changed_when: false }
+    apt_cache_policy: { command: "apt-cache policy", status: candidate_unverified, changed_when: false }
+    apt_get_install: { command: "apt-get install <package>", status: candidate_unverified, guards: [remediation_enabled, package_install_allowed, local_repository_defined] }
+    apt_get_remove: { command: "apt-get remove <package>", status: candidate_unverified, guards: [remediation_enabled, package_install_allowed, local_repository_defined, destructive_changes_allowed] }
+  services:
+    systemctl_is_enabled: { command: "systemctl is-enabled <service>", status: candidate_unverified, changed_when: false }
+    systemctl_is_active: { command: "systemctl is-active <service>", status: candidate_unverified, changed_when: false }
+    systemctl_show: { command: "systemctl show <service> --no-pager", status: candidate_unverified, changed_when: false }
+    service_status_fallback: { command: "service <service> status", status: unknown, changed_when: false }
+  sshd:
+    effective_config: { command: "sshd -T", status: candidate_unverified, changed_when: false }
+    config_test: { command: "sshd -t -f /etc/ssh/sshd_config", status: candidate_unverified, changed_when: false }
+  sudo:
+    sudo_version: { command: "sudo -V", status: candidate_unverified, changed_when: false }
+    visudo_check: { command: "visudo -cf /etc/sudoers", status: candidate_unverified, changed_when: false }
+  pam:
+    grep_pam_modules: { command: "grep -R <pattern> /etc/pam.d", status: candidate_unverified, changed_when: false }
+  cron_at:
+    crontab_list_root: { command: "crontab -l -u root", status: candidate_unverified, changed_when: false }
+  time_sync:
+    timedatectl_status: { command: "timedatectl status", status: candidate_unverified, changed_when: false }
+    chronyc_sources: { command: "chronyc sources", status: candidate_unverified, changed_when: false }
+  logging:
+    journalctl_disk_usage: { command: "journalctl --disk-usage", status: candidate_unverified, changed_when: false }
+    rsyslogd_config_check: { command: "rsyslogd -N1", status: candidate_unverified, changed_when: false }
+    auditctl_status: { command: "auditctl -s", status: candidate_unverified, changed_when: false }
+    augenrules_check: { command: "augenrules --check", status: candidate_unverified, changed_when: false }
+  bootloader:
+    grub_mkconfig: { command: "grub-mkconfig -o <grub_cfg>", status: candidate_unverified, guards: [remediation_enabled, destructive_changes_allowed, engineer_approval_recorded] }
+    grub2_mkconfig: { command: "grub2-mkconfig -o <grub_cfg>", status: unknown, guards: [remediation_enabled, destructive_changes_allowed, engineer_approval_recorded] }
+    grub_probe: { command: "grub-probe --version", status: candidate_unverified, changed_when: false }
+  filesystem:
+    findmnt: { command: "findmnt --kernel --json", status: candidate_unverified, changed_when: false }
+    mount: { command: "mount", status: candidate_unverified, changed_when: false }
+    modprobe_showconfig: { command: "modprobe --showconfig", status: candidate_unverified, changed_when: false }
+    modprobe_dry_run: { command: "modprobe -n -v <module>", status: candidate_unverified, changed_when: false }
+    lsmod: { command: "lsmod", status: candidate_unverified, changed_when: false }
+    sysctl_read: { command: "sysctl <key>", status: candidate_unverified, changed_when: false }
+  network:
+    ss_listen: { command: "ss -lntu", status: candidate_unverified, changed_when: false }
+    ip_link: { command: "ip link", status: candidate_unverified, changed_when: false }
+    nft_list_ruleset: { command: "nft list ruleset", status: candidate_unverified, changed_when: false }
+    iptables_save: { command: "iptables-save", status: candidate_unverified, changed_when: false }

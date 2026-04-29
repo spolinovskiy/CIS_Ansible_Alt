@@ -1,0 +1,7 @@
+---
+- name: ALT CIS precheck
+  hosts: alt_linux
+  gather_facts: true
+  roles:
+    - role: cis_precheck
+      tags: [precheck, alt]

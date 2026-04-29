@@ -1,0 +1,40 @@
+# CIS Host Audit Checklist
+
+- Generated (UTC): {{ cis_report_artifact.metadata.generated_at_utc }}
+- Host: {{ cis_report_artifact.metadata.host.inventory_hostname }}
+- Address: {{ cis_report_artifact.metadata.host.ansible_host }}
+- Distribution: {{ cis_report_artifact.metadata.host.distribution }} {{ cis_report_artifact.metadata.host.distribution_version }}
+- Kernel: {{ cis_report_artifact.metadata.host.kernel }}
+- Groups: {{ cis_report_artifact.metadata.host.groups | join(', ') }}
+- Scope Source: {{ cis_report_artifact.metadata.source_scope }}
+- Chapters With Evidence: {{ cis_report_artifact.metadata.audit_chapters_with_evidence | join(', ') if (cis_report_artifact.metadata.audit_chapters_with_evidence | length) > 0 else 'none' }}
+
+## Summary
+
+- Total Scoped Controls: {{ cis_report_artifact.summary.total_scoped_controls }}
+- Pass: {{ cis_report_artifact.summary.pass }}
+- Fail: {{ cis_report_artifact.summary.fail }}
+- Blocked: {{ cis_report_artifact.summary.blocked }}
+- Manual: {{ cis_report_artifact.summary.manual }}
+- Needs Scope Clarification: {{ cis_report_artifact.summary.needs_scope_clarification }}
+- Not Assessed: {{ cis_report_artifact.summary.not_assessed }}
+
+## Status Legend
+
+- [x] pass
+- [!] fail
+- [~] blocked
+- [m] manual
+- [?] needs_scope_clarification
+- [ ] not_assessed
+
+{% for chapter in cis_report_artifact.chapters %}
+## {{ chapter.chapter }}
+
+| Mark | Control ID | Title | Status |
+|---|---|---|---|
+{% for control in chapter.controls %}
+| {{ control.status_mark }} | {{ control.cis_control_id }} | {{ control.cis_control_title }} | {{ control.status }} |
+{% endfor %}
+
+{% endfor %}

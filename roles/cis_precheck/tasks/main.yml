@@ -1,0 +1,9 @@
+---
+- name: Precheck | Verify target distribution is ALT Linux family
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution is defined
+      - ansible_distribution | lower is search('alt')
+    fail_msg: "This independent project is for ALT Linux targets only."
+    success_msg: "ALT Linux target detected."
+  tags: [precheck, alt]

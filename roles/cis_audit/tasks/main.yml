@@ -1,0 +1,30 @@
+---
+- name: Audit | SUDO | Include chapter controls
+  ansible.builtin.include_tasks:
+    file: sudo.yml
+  tags: [cis, audit, alt, sudo, chapter_sudo]
+
+- name: Audit | Bootloader | Include chapter controls
+  ansible.builtin.include_tasks:
+    file: bootloader.yml
+  tags: [cis, audit, alt, bootloader, chapter_bootloader]
+
+- name: Audit | PAM | Include chapter controls
+  ansible.builtin.include_tasks:
+    file: pam.yml
+  tags: [cis, audit, alt, pam, chapter_pam]
+
+- name: Audit | Cron&At | Include chapter controls
+  ansible.builtin.include_tasks:
+    file: cron_at.yml
+  tags: [cis, audit, alt, cron_at, chapter_cron_at]
+
+- name: Audit | SSHD | Include chapter controls
+  ansible.builtin.include_tasks:
+    file: sshd.yml
+  tags: [cis, audit, alt, sshd, chapter_sshd]
+
+- name: Audit | Local Users and Groups | Include chapter controls
+  ansible.builtin.include_tasks:
+    file: local_users_groups.yml
+  tags: [cis, audit, alt, local_users_groups, chapter_local_users_groups]

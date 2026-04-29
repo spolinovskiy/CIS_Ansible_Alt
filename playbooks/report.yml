@@ -1,0 +1,7 @@
+---
+- name: ALT CIS report
+  hosts: alt_linux
+  gather_facts: true
+  roles:
+    - role: cis_report
+      tags: [cis, report, alt]

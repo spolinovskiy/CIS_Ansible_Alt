@@ -1,0 +1,94 @@
+---
+- name: Audit | Bootloader | Initialize chapter tracking
+  ansible.builtin.set_fact:
+    cis_bootloader_evidence_records: []
+    cis_bootloader_result_summary: []
+  changed_when: false
+  tags: [cis, audit, alt, bootloader, chapter_bootloader]
+
+- name: Audit | Bootloader | 1.4.1 | Gather candidate bootloader config stats
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - /boot/grub/grub.cfg
+    - /boot/grub2/grub.cfg
+    - /boot/efi/EFI/altlinux/grub.cfg
+  register: cis_1_4_1_bootloader_cfg_stats
+  changed_when: false
+  tags: [cis, cis_1_4_1, audit, alt, bootloader, chapter_bootloader]
+
+- name: Audit | Bootloader | 1.4.1 | Check bootloader password directives
+  ansible.builtin.shell: >
+    grep -Pi -- '^\s*(set\s+superusers=|password(_pbkdf2)?\s+)' {{ item.item | quote }} 2>/dev/null
+  loop: "{{ cis_1_4_1_bootloader_cfg_stats.results | selectattr('stat.exists', 'defined') | selectattr('stat.exists') | list }}"
+  register: cis_1_4_1_bootloader_password_scan
+  failed_when: false
+  changed_when: false
+  when: (cis_1_4_1_bootloader_cfg_stats.results | selectattr('stat.exists', 'defined') | selectattr('stat.exists') | list | length) > 0
+  tags: [cis, cis_1_4_1, audit, alt, bootloader, chapter_bootloader]
+
+- name: Audit | Bootloader | 1.4.1 | Record evidence
+  ansible.builtin.set_fact:
+    cis_bootloader_evidence_records: "{{ cis_bootloader_evidence_records + [ {'control_id': '1.4.1', 'title': 'Ensure bootloader password is set', 'status': cis_1_4_1_status, 'registers': ['cis_1_4_1_bootloader_cfg_stats', 'cis_1_4_1_bootloader_password_scan']} ] }}"
+    cis_bootloader_result_summary: "{{ cis_bootloader_result_summary + [ {'control_id': '1.4.1', 'status': cis_1_4_1_status} ] }}"
+  vars:
+    cis_1_4_1_existing_cfgs: "{{ cis_1_4_1_bootloader_cfg_stats.results | selectattr('stat.exists', 'defined') | selectattr('stat.exists') | list }}"
+    cis_1_4_1_password_hits: "{{ (cis_1_4_1_bootloader_password_scan.results | default([])) | selectattr('rc', 'defined') | selectattr('rc', 'equalto', 0) | list }}"
+    cis_1_4_1_status: "{{ 'pass' if (cis_1_4_1_existing_cfgs | length > 0 and cis_1_4_1_password_hits | length > 0) else ('blocked' if cis_1_4_1_existing_cfgs | length == 0 else 'fail') }}"
+  changed_when: false
+  tags: [cis, cis_1_4_1, audit, alt, bootloader, chapter_bootloader]
+
+- name: Audit | Bootloader | 1.4.2 | Record bootloader config permissions
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - /boot/grub/grub.cfg
+    - /boot/grub2/grub.cfg
+    - /boot/efi/EFI/altlinux/grub.cfg
+  register: cis_1_4_2_bootloader_cfg_permissions
+  changed_when: false
+  tags: [cis, cis_1_4_2, audit, alt, bootloader, chapter_bootloader]
+
+- name: Audit | Bootloader | 1.4.2 | Record evidence
+  ansible.builtin.set_fact:
+    cis_bootloader_evidence_records: "{{ cis_bootloader_evidence_records + [ {'control_id': '1.4.2', 'title': 'Ensure access to bootloader config is configured', 'status': cis_1_4_2_status, 'register': 'cis_1_4_2_bootloader_cfg_permissions'} ] }}"
+    cis_bootloader_result_summary: "{{ cis_bootloader_result_summary + [ {'control_id': '1.4.2', 'status': cis_1_4_2_status} ] }}"
+  vars:
+    cis_1_4_2_existing_cfgs: "{{ cis_1_4_2_bootloader_cfg_permissions.results | selectattr('stat.exists', 'defined') | selectattr('stat.exists') | list }}"
+    cis_1_4_2_bad_perms: "{{ cis_1_4_2_existing_cfgs | rejectattr('stat.pw_name', 'equalto', 'root') | list }}"
+    cis_1_4_2_bad_groups: "{{ cis_1_4_2_existing_cfgs | rejectattr('stat.gr_name', 'equalto', 'root') | list }}"
+    cis_1_4_2_bad_modes: "{{ cis_1_4_2_existing_cfgs | rejectattr('stat.mode', 'match', '^0?[0-6]00$') | list }}"
+    cis_1_4_2_status: "{{ 'pass' if (cis_1_4_2_existing_cfgs | length > 0 and cis_1_4_2_bad_perms | length == 0 and cis_1_4_2_bad_groups | length == 0 and cis_1_4_2_bad_modes | length == 0) else ('blocked' if cis_1_4_2_existing_cfgs | length == 0 else 'fail') }}"
+  changed_when: false
+  tags: [cis, cis_1_4_2, audit, alt, bootloader, chapter_bootloader]
+
+- name: Audit | Bootloader | Build chapter summary facts
+  ansible.builtin.set_fact:
+    cis_bootloader_chapter:
+      chapter: Bootloader
+      sheet: Bootloader
+      implemented_controls:
+        - "1.4.1"
+        - "1.4.2"
+      skipped_controls: []
+      manual_controls: []
+      blocked_controls: "{{ cis_bootloader_result_summary | selectattr('status', 'equalto', 'blocked') | map(attribute='control_id') | list }}"
+      high_risk_controls:
+        - "1.4.1"
+        - "1.4.2"
+      offline_assumptions:
+        - "Audit-only tasks use local file stat and grep checks only; no Internet access is required."
+        - "No bootloader regeneration, package install/remove, or permission remediation is performed."
+      os_tested:
+        distribution: "{{ ansible_distribution | default('unknown') }}"
+        version: "{{ ansible_distribution_version | default('unknown') }}"
+        kernel: "{{ ansible_kernel | default('unknown') }}"
+      commands:
+        - "stat /boot/grub/grub.cfg"
+        - "stat /boot/grub2/grub.cfg"
+        - "stat /boot/efi/EFI/altlinux/grub.cfg"
+        - "grep -Pi '^(set superusers=|password(_pbkdf2)? )' <bootloader cfg>"
+      evidence_records: "{{ cis_bootloader_evidence_records }}"
+      result_summary: "{{ cis_bootloader_result_summary }}"
+  changed_when: false
+  tags: [cis, audit, alt, bootloader, chapter_bootloader]

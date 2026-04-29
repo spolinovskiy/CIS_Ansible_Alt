@@ -1,0 +1,97 @@
+---
+metadata:
+  schema_version: canonical-os-map-v1
+  project_os: alt
+  generated_by_task: ALT-0005
+  generated_at: "2026-04-28T00:00:00Z"
+  source_scope: linux_cis.xlsx
+  reference_inputs:
+    - data/cis_linux_scope/controls_from_excel.json
+    - data/source_scripts/mapped_script_logic.yml
+    - data/required_information/required_information_template.yml
+    - PRD.json
+  evidence_level: mapping_only_not_lab_tested
+  scope_note: "No CIS controls are implemented by these mapping files."
+
+project_os: alt
+os_family: alt_linux
+ansible_fact_keys:
+  distribution: ansible_distribution
+  distribution_version: ansible_distribution_version
+  distribution_major_version: ansible_distribution_major_version
+  os_family: ansible_os_family
+  kernel: ansible_kernel
+
+supported_distribution_names:
+  - name: "ALT Linux"
+    match: exact_or_contains
+    status: candidate_untested
+  - name: "ALT"
+    match: exact_or_contains
+    status: candidate_untested
+  - name: "ALT Server"
+    match: exact_or_contains
+    status: candidate_untested
+  - name: "ALT Workstation"
+    match: exact_or_contains
+    status: candidate_untested
+
+version_policy:
+  tested_versions: []
+  candidate_versions:
+    - version: "10"
+      major_version: "10"
+      branch: p10
+      status: candidate_untested
+      notes: "Common ALT p10 family identifier; not validated in this repository."
+    - version: "10.2"
+      major_version: "10"
+      branch: p10
+      status: candidate_untested
+      notes: "Common ALT 10.x family identifier; not validated in this repository."
+    - version: "11"
+      major_version: "11"
+      branch: p11
+      status: candidate_untested
+      notes: "Common ALT p11 family identifier; not validated in this repository."
+    - version: "11.0"
+      major_version: "11"
+      branch: p11
+      status: candidate_untested
+      notes: "Common ALT 11.x family identifier; not validated in this repository."
+  unsupported_version_policy: fail_safely_unless_audit_only_allowed
+  unknown_version_policy: fail_safely_unless_audit_only_allowed
+  audit_only_unknown_version_allowed_variable: alt_allow_unknown_version_audit_only
+
+fact_matching:
+  required_conditions:
+    - "ansible_distribution must contain ALT or ALT Linux after case-insensitive normalization."
+    - "ansible_distribution_version and ansible_distribution_major_version must be captured in evidence."
+    - "ansible_os_family must be captured but is not assumed to equal Debian or RedHat."
+    - "ansible_kernel must be captured for kernel module, bootloader, filesystem, and audit controls."
+  version_resolution_order:
+    - ansible_distribution_version
+    - ansible_distribution_major_version
+    - ansible_kernel
+  safe_failure_message: "Unsupported or unverified ALT Linux version. Run audit-only only if explicitly allowed and mark version-dependent controls manual_review_required."
+
+execution_guards:
+  remediation_enabled:
+    default: false
+    required_for: remediation
+  package_install_allowed:
+    default: false
+    required_for: package_install_or_remove
+  local_repository_defined:
+    default: false
+    required_for: package_install_or_remove
+  destructive_changes_allowed:
+    default: false
+    required_for: service_disable_package_remove_filesystem_or_bootloader_change
+  engineer_approval_required_default: true
+
+validation_status:
+  yaml_validated: true
+  ansible_load_tested: pending
+  lab_host_tested: false
+  notes: "No ALT lab facts were available during ALT-0005."

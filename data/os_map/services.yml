@@ -1,0 +1,150 @@
+---
+metadata:
+  schema_version: canonical-os-map-v1
+  project_os: alt
+  generated_by_task: ALT-0005
+  generated_at: "2026-04-28T00:00:00Z"
+  evidence_level: mapping_only_not_lab_tested
+
+project_os: alt
+service_manager:
+  primary: systemd
+  status: candidate_unverified
+  query_command: "systemctl show <service> --no-pager"
+  list_command: "systemctl list-unit-files --type=service --no-pager"
+  fallback:
+    name: sysvinit_service
+    status: unknown
+  notes: "systemd is expected on common modern ALT releases, but target facts must confirm service manager behavior."
+
+service_operation_guards:
+  service_disable_allowed_when:
+    remediation_enabled: true
+    destructive_changes_allowed: true
+    approved_services_list_defined: true
+    engineer_approval_recorded: true
+  service_restart_allowed_when:
+    remediation_enabled: true
+    maintenance_window_defined: true
+    engineer_approval_recorded: true
+  missing_approved_service_list_result: manual_review_required
+
+services:
+  sshd:
+    unit_names:
+      - name: sshd.service
+        status: candidate_unverified
+      - name: ssh.service
+        status: unknown
+    package_key: ssh_server
+    controls:
+      - "5.1.1"
+      - "5.1.22"
+    ot_safety: "Never restart or reconfigure SSH without approved source subnets and emergency access procedure."
+  sudo:
+    unit_names: []
+    package_key: sudo
+    controls:
+      - "5.2.1"
+      - "5.2.7"
+    notes: "sudo is package/config based, not a daemon."
+  pam:
+    unit_names: []
+    package_key: pam
+    controls:
+      - "5.3.1.1"
+      - "5.3.3.4.4"
+    notes: "PAM changes are authentication-critical and require manual review and rollback."
+  cron:
+    unit_names:
+      - name: crond.service
+        status: candidate_unverified
+      - name: cron.service
+        status: unknown
+    package_key: cron_at
+    controls:
+      - "2.4.1.1"
+  atd:
+    unit_names:
+      - name: atd.service
+        status: candidate_unverified
+    package_key: cron_at
+    controls:
+      - "2.4.2.1"
+  chrony:
+    unit_names:
+      - name: chronyd.service
+        status: candidate_unverified
+      - name: chrony.service
+        status: unknown
+    package_key: time_sync
+    controls:
+      - "2.3.3.1"
+      - "2.3.3.3"
+    ot_safety: "Time synchronization changes must preserve OT time source requirements."
+  systemd_timesyncd:
+    unit_names:
+      - name: systemd-timesyncd.service
+        status: unknown
+    package_key: time_sync
+    controls:
+      - "2.3.2.1"
+      - "2.3.2.2"
+  journald:
+    unit_names:
+      - name: systemd-journald.service
+        status: candidate_unverified
+    package_key: logging
+    controls:
+      - "6.1.1.1"
+      - "6.1.1.4"
+  systemd_journal_upload:
+    unit_names:
+      - name: systemd-journal-upload.service
+        status: unknown
+    package_key: logging
+    controls:
+      - "6.1.2.1.3"
+  systemd_journal_remote:
+    unit_names:
+      - name: systemd-journal-remote.service
+        status: unknown
+    package_key: logging
+    controls:
+      - "6.1.2.1.1"
+      - "6.1.2.1.4"
+  rsyslog:
+    unit_names:
+      - name: rsyslog.service
+        status: candidate_unverified
+    package_key: logging
+    controls:
+      - "6.1.3.1"
+      - "6.1.3.8"
+  auditd:
+    unit_names:
+      - name: auditd.service
+        status: candidate_unverified
+    package_key: logging
+    controls:
+      - "6.2.1.1"
+      - "6.2.4.10"
+    ot_safety: "Do not restart auditd automatically; immutable audit rules and full-disk behavior require approval."
+  service_inventory_candidates:
+    autofs: { unit_names: [ { name: autofs.service, status: candidate_unverified } ], controls: ["2.1.1"] }
+    avahi: { unit_names: [ { name: avahi-daemon.service, status: candidate_unverified } ], controls: ["2.1.2"] }
+    dhcp_server: { unit_names: [ { name: dhcpd.service, status: unknown } ], controls: ["2.1.3"] }
+    dns_server: { unit_names: [ { name: named.service, status: candidate_unverified } ], controls: ["2.1.4"] }
+    dnsmasq: { unit_names: [ { name: dnsmasq.service, status: candidate_unverified } ], controls: ["2.1.5"] }
+    ftp_server: { unit_names: [ { name: vsftpd.service, status: candidate_unverified } ], controls: ["2.1.6"] }
+    ldap_server: { unit_names: [ { name: slapd.service, status: unknown } ], controls: ["2.1.7"] }
+    nfs_server: { unit_names: [ { name: nfs-server.service, status: candidate_unverified } ], controls: ["2.1.9"] }
+    rpcbind: { unit_names: [ { name: rpcbind.service, status: candidate_unverified } ], controls: ["2.1.12"] }
+    rsync: { unit_names: [ { name: rsyncd.service, status: candidate_unverified } ], controls: ["2.1.13"] }
+    samba: { unit_names: [ { name: smb.service, status: candidate_unverified }, { name: nmb.service, status: candidate_unverified } ], controls: ["2.1.14"] }
+    snmp: { unit_names: [ { name: snmpd.service, status: candidate_unverified } ], controls: ["2.1.15"] }
+    tftp: { unit_names: [ { name: tftp.service, status: unknown } ], controls: ["2.1.16"] }
+    squid: { unit_names: [ { name: squid.service, status: candidate_unverified } ], controls: ["2.1.17"] }
+    web_server: { unit_names: [ { name: httpd.service, status: unknown }, { name: apache2.service, status: candidate_unverified }, { name: nginx.service, status: candidate_unverified } ], controls: ["2.1.18"] }
+    xinetd: { unit_names: [ { name: xinetd.service, status: candidate_unverified } ], controls: ["2.1.19"] }
+    postfix: { unit_names: [ { name: postfix.service, status: candidate_unverified } ], controls: ["2.1.21"] }

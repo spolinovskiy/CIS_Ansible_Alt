@@ -1,0 +1,313 @@
+---
+- name: Audit | SSHD | Load ALT OS path map
+  ansible.builtin.include_vars:
+    file: "{{ playbook_dir }}/../data/os_map/paths.yml"
+    name: cis_os_paths
+  changed_when: false
+  tags: [cis, audit, alt, sshd, chapter_sshd]
+
+- name: Audit | SSHD | Define chapter defaults and placeholders
+  ansible.builtin.set_fact:
+    cis_sshd_main_config: "{{ cis_os_paths.paths.sshd.main_config.path | default('/etc/ssh/sshd_config') }}"
+    cis_sshd_config_dir: "{{ cis_os_paths.paths.sshd.config_dir.path | default('/etc/ssh/sshd_config.d') }}"
+    cis_sshd_private_keys_glob: "{{ cis_os_paths.paths.sshd.host_private_keys_glob.path | default('/etc/ssh/ssh_host_*_key') }}"
+    cis_sshd_public_keys_glob: "{{ cis_os_paths.paths.sshd.host_public_keys_glob.path | default('/etc/ssh/ssh_host_*_key.pub') }}"
+    cis_sshd_approved_access_subnets: "{{ cis_sshd_approved_access_subnets | default([]) }}"
+    cis_sshd_approved_access_users: "{{ cis_sshd_approved_access_users | default([]) }}"
+    cis_sshd_approved_access_groups: "{{ cis_sshd_approved_access_groups | default([]) }}"
+    cis_sshd_approved_ciphers: "{{ cis_sshd_approved_ciphers | default([]) }}"
+    cis_sshd_approved_macs: "{{ cis_sshd_approved_macs | default([]) }}"
+    cis_sshd_approved_kex_algorithms: "{{ cis_sshd_approved_kex_algorithms | default([]) }}"
+    cis_sshd_approved_banner_text_source: "{{ cis_sshd_approved_banner_text_source | default('') }}"
+    cis_sshd_approved_idle_session_settings: "{{ cis_sshd_approved_idle_session_settings | default({}) }}"
+    cis_sshd_approved_max_settings: "{{ cis_sshd_approved_max_settings | default({}) }}"
+    cis_sshd_missing_information_placeholders:
+      - "MISSING_OT_BASELINE:approved_sshd_access_subnets"
+      - "MISSING_OT_BASELINE:approved_sshd_access_users"
+      - "MISSING_OT_BASELINE:approved_sshd_access_groups"
+      - "MISSING_OT_BASELINE:approved_sshd_ciphers"
+      - "MISSING_OT_BASELINE:approved_sshd_macs"
+      - "MISSING_OT_BASELINE:approved_sshd_kex_algorithms"
+      - "MISSING_OT_BASELINE:approved_banner_text_source"
+      - "MISSING_OT_BASELINE:approved_idle_session_settings"
+      - "MISSING_OT_BASELINE:approved_max_settings"
+  changed_when: false
+  tags: [cis, audit, alt, sshd, chapter_sshd]
+
+- name: Audit | SSHD | Stat sshd main config
+  ansible.builtin.stat:
+    path: "{{ cis_sshd_main_config }}"
+  register: cis_sshd_main_config_stat
+  changed_when: false
+  tags: [cis, audit, alt, sshd, chapter_sshd]
+
+- name: Audit | SSHD | Stat sshd include config dir
+  ansible.builtin.stat:
+    path: "{{ cis_sshd_config_dir }}"
+  register: cis_sshd_config_dir_stat
+  changed_when: false
+  tags: [cis, audit, alt, sshd, chapter_sshd]
+
+- name: Audit | SSHD | Find sshd include config files
+  ansible.builtin.find:
+    paths: "{{ cis_sshd_config_dir }}"
+    file_type: file
+    patterns: "*.conf"
+  register: cis_sshd_config_dir_find
+  changed_when: false
+  when: cis_sshd_config_dir_stat.stat.exists | default(false)
+  tags: [cis, audit, alt, sshd, chapter_sshd]
+
+- name: Audit | SSHD | Build config file set
+  ansible.builtin.set_fact:
+    cis_sshd_config_files: "{{ ([cis_sshd_main_config] if (cis_sshd_main_config_stat.stat.exists | default(false)) else []) + ((cis_sshd_config_dir_find.files | default([])) | map(attribute='path') | list) }}"
+  changed_when: false
+  tags: [cis, audit, alt, sshd, chapter_sshd]
+
+- name: Audit | SSHD | Collect private key stats
+  ansible.builtin.shell: "for f in {{ cis_sshd_private_keys_glob }}; do [ -f \"$f\" ] && stat -c '%n|%U|%G|%a' \"$f\"; done"
+  register: cis_5_1_2_private_key_stats
+  failed_when: false
+  changed_when: false
+  tags: [cis, cis_5_1_2, audit, alt, sshd, chapter_sshd]
+
+- name: Audit | SSHD | Collect public key stats
+  ansible.builtin.shell: "for f in {{ cis_sshd_public_keys_glob }}; do [ -f \"$f\" ] && stat -c '%n|%U|%G|%a' \"$f\"; done"
+  register: cis_5_1_3_public_key_stats
+  failed_when: false
+  changed_when: false
+  tags: [cis, cis_5_1_3, audit, alt, sshd, chapter_sshd]
+
+- name: Audit | SSHD | Run control checks against sshd config
+  ansible.builtin.shell: "{{ item.cmd }}"
+  loop:
+    - { id: '5.1.4', title: 'Ensure sshd access is configured', cmd: "grep -RPs -- '^(AllowUsers|AllowGroups|DenyUsers|DenyGroups)\\b' {{ cis_sshd_config_files | join(' ') }} 2>/dev/null" }
+    - { id: '5.1.5', title: 'Ensure sshd Banner is configured', cmd: "grep -RPs -- '^Banner\\s+\\S+' {{ cis_sshd_config_files | join(' ') }} 2>/dev/null" }
+    - { id: '5.1.6', title: 'Ensure sshd Ciphers are configured', cmd: "grep -RPs -- '^Ciphers\\s+\\S+' {{ cis_sshd_config_files | join(' ') }} 2>/dev/null" }
+    - { id: '5.1.7', title: 'Ensure sshd ClientAliveInterval and ClientAliveCountMax are configured', cmd: "grep -RPs -- '^ClientAliveInterval\\s+[0-9]+' {{ cis_sshd_config_files | join(' ') }} 2>/dev/null && grep -RPs -- '^ClientAliveCountMax\\s+[0-9]+' {{ cis_sshd_config_files | join(' ') }} 2>/dev/null" }
+    - { id: '5.1.8', title: 'Ensure sshd DisableForwarding is enabled', cmd: "grep -RPs -- '^DisableForwarding\\s+yes\\b' {{ cis_sshd_config_files | join(' ') }} 2>/dev/null" }
+    - { id: '5.1.9', title: 'Ensure sshd GSSAPIAuthentication is disabled', cmd: "grep -RPs -- '^GSSAPIAuthentication\\s+no\\b' {{ cis_sshd_config_files | join(' ') }} 2>/dev/null" }
+    - { id: '5.1.10', title: 'Ensure sshd HostbasedAuthentication is disabled', cmd: "grep -RPs -- '^HostbasedAuthentication\\s+no\\b' {{ cis_sshd_config_files | join(' ') }} 2>/dev/null" }
+    - { id: '5.1.11', title: 'Ensure sshd IgnoreRhosts is enabled', cmd: "grep -RPs -- '^IgnoreRhosts\\s+yes\\b' {{ cis_sshd_config_files | join(' ') }} 2>/dev/null" }
+    - { id: '5.1.12', title: 'Ensure sshd KexAlgorithms is configured', cmd: "grep -RPs -- '^KexAlgorithms\\s+\\S+' {{ cis_sshd_config_files | join(' ') }} 2>/dev/null" }
+    - { id: '5.1.13', title: 'Ensure sshd LoginGraceTime is configured', cmd: "grep -RPs -- '^LoginGraceTime\\s+\\S+' {{ cis_sshd_config_files | join(' ') }} 2>/dev/null" }
+    - { id: '5.1.14', title: 'Ensure sshd LogLevel is configured', cmd: "grep -RPs -- '^LogLevel\\s+\\S+' {{ cis_sshd_config_files | join(' ') }} 2>/dev/null" }
+    - { id: '5.1.15', title: 'Ensure sshd MACs are configured', cmd: "grep -RPs -- '^MACs\\s+\\S+' {{ cis_sshd_config_files | join(' ') }} 2>/dev/null" }
+    - { id: '5.1.16', title: 'Ensure sshd MaxAuthTries is configured', cmd: "grep -RPs -- '^MaxAuthTries\\s+[0-9]+' {{ cis_sshd_config_files | join(' ') }} 2>/dev/null" }
+    - { id: '5.1.17', title: 'Ensure sshd MaxSessions is configured', cmd: "grep -RPs -- '^MaxSessions\\s+[0-9]+' {{ cis_sshd_config_files | join(' ') }} 2>/dev/null" }
+    - { id: '5.1.18', title: 'Ensure sshd MaxStartups is configured', cmd: "grep -RPs -- '^MaxStartups\\s+\\S+' {{ cis_sshd_config_files | join(' ') }} 2>/dev/null" }
+    - { id: '5.1.19', title: 'Ensure sshd PermitEmptyPasswords is disabled', cmd: "grep -RPs -- '^PermitEmptyPasswords\\s+no\\b' {{ cis_sshd_config_files | join(' ') }} 2>/dev/null" }
+    - { id: '5.1.20', title: 'Ensure sshd PermitRootLogin is disabled', cmd: "grep -RPs -- '^PermitRootLogin\\s+no\\b' {{ cis_sshd_config_files | join(' ') }} 2>/dev/null" }
+    - { id: '5.1.21', title: 'Ensure sshd PermitUserEnvironment is disabled', cmd: "grep -RPs -- '^PermitUserEnvironment\\s+no\\b' {{ cis_sshd_config_files | join(' ') }} 2>/dev/null" }
+    - { id: '5.1.22', title: 'Ensure sshd UsePAM is enabled', cmd: "grep -RPs -- '^UsePAM\\s+yes\\b' {{ cis_sshd_config_files | join(' ') }} 2>/dev/null" }
+  register: cis_sshd_control_checks
+  failed_when: false
+  changed_when: false
+  when: (cis_sshd_config_files | length) > 0
+  tags: [cis, audit, alt, sshd, chapter_sshd]
+
+- name: Audit | SSHD | Build chapter evidence and results
+  ansible.builtin.set_fact:
+    cis_sshd_evidence_map:
+      "5.1.1":
+        path: "{{ cis_sshd_main_config }}"
+        exists: "{{ cis_sshd_main_config_stat.stat.exists | default(false) }}"
+        owner: "{{ cis_sshd_main_config_stat.stat.pw_name | default('unknown') }}"
+        group: "{{ cis_sshd_main_config_stat.stat.gr_name | default('unknown') }}"
+        mode: "{{ cis_sshd_main_config_stat.stat.mode | default('unknown') }}"
+      "5.1.2":
+        key_stats_lines: "{{ cis_5_1_2_private_key_stats.stdout_lines | default([]) }}"
+      "5.1.3":
+        key_stats_lines: "{{ cis_5_1_3_public_key_stats.stdout_lines | default([]) }}"
+      "5.1.4":
+        missing_information_placeholders:
+          - "MISSING_OT_BASELINE:approved_sshd_access_subnets"
+          - "MISSING_OT_BASELINE:approved_sshd_access_users"
+          - "MISSING_OT_BASELINE:approved_sshd_access_groups"
+      "5.1.5":
+        missing_information_placeholders:
+          - "MISSING_OT_BASELINE:approved_banner_text_source"
+      "5.1.6":
+        missing_information_placeholders:
+          - "MISSING_OT_BASELINE:approved_sshd_ciphers"
+      "5.1.7":
+        missing_information_placeholders:
+          - "MISSING_OT_BASELINE:approved_idle_session_settings"
+      "5.1.12":
+        missing_information_placeholders:
+          - "MISSING_OT_BASELINE:approved_sshd_kex_algorithms"
+      "5.1.15":
+        missing_information_placeholders:
+          - "MISSING_OT_BASELINE:approved_sshd_macs"
+      "5.1.16":
+        missing_information_placeholders:
+          - "MISSING_OT_BASELINE:approved_max_settings"
+      "5.1.17":
+        missing_information_placeholders:
+          - "MISSING_OT_BASELINE:approved_max_settings"
+      "5.1.18":
+        missing_information_placeholders:
+          - "MISSING_OT_BASELINE:approved_max_settings"
+    cis_sshd_result_map:
+      "5.1.1":
+        control_id: "5.1.1"
+        title: "Ensure permissions on /etc/ssh/sshd_config are configured"
+        status: "{{ 'pass' if (cis_sshd_main_config_stat.stat.exists | default(false) and cis_sshd_main_config_stat.stat.pw_name == 'root' and cis_sshd_main_config_stat.stat.gr_name == 'root' and (cis_sshd_main_config_stat.stat.mode | default('')) is match('^0?[0-6]00$')) else 'fail' }}"
+      "5.1.2":
+        control_id: "5.1.2"
+        title: "Ensure permissions on SSH private host key files are configured"
+        status: "{{ 'pass' if ((cis_5_1_2_private_key_stats.stdout_lines | default([]) | length) > 0 and (cis_5_1_2_private_key_stats.stdout_lines | select('search', '\\|root\\|root\\|[0-6]00$') | list | length) == (cis_5_1_2_private_key_stats.stdout_lines | length)) else 'fail' }}"
+      "5.1.3":
+        control_id: "5.1.3"
+        title: "Ensure permissions on SSH public host key files are configured"
+        status: "{{ 'pass' if ((cis_5_1_3_public_key_stats.stdout_lines | default([]) | length) > 0 and (cis_5_1_3_public_key_stats.stdout_lines | select('search', '\\|root\\|root\\|[0-6]44$') | list | length) == (cis_5_1_3_public_key_stats.stdout_lines | length)) else 'fail' }}"
+      "5.1.4": "{{ {'control_id':'5.1.4','title':'Ensure sshd access is configured','status': (cis_sshd_status_by_id['5.1.4'] | default('blocked_by_missing_information'))} }}"
+      "5.1.5": "{{ {'control_id':'5.1.5','title':'Ensure sshd Banner is configured','status': (cis_sshd_status_by_id['5.1.5'] | default('blocked_by_missing_information'))} }}"
+      "5.1.6": "{{ {'control_id':'5.1.6','title':'Ensure sshd Ciphers are configured','status': (cis_sshd_status_by_id['5.1.6'] | default('blocked_by_missing_information'))} }}"
+      "5.1.7": "{{ {'control_id':'5.1.7','title':'Ensure sshd ClientAliveInterval and ClientAliveCountMax are configured','status': (cis_sshd_status_by_id['5.1.7'] | default('blocked_by_missing_information'))} }}"
+      "5.1.8": "{{ {'control_id':'5.1.8','title':'Ensure sshd DisableForwarding is enabled','status': (cis_sshd_status_by_id['5.1.8'] | default('fail'))} }}"
+      "5.1.9": "{{ {'control_id':'5.1.9','title':'Ensure sshd GSSAPIAuthentication is disabled','status': (cis_sshd_status_by_id['5.1.9'] | default('fail'))} }}"
+      "5.1.10": "{{ {'control_id':'5.1.10','title':'Ensure sshd HostbasedAuthentication is disabled','status': (cis_sshd_status_by_id['5.1.10'] | default('fail'))} }}"
+      "5.1.11": "{{ {'control_id':'5.1.11','title':'Ensure sshd IgnoreRhosts is enabled','status': (cis_sshd_status_by_id['5.1.11'] | default('fail'))} }}"
+      "5.1.12": "{{ {'control_id':'5.1.12','title':'Ensure sshd KexAlgorithms is configured','status': (cis_sshd_status_by_id['5.1.12'] | default('blocked_by_missing_information'))} }}"
+      "5.1.13": "{{ {'control_id':'5.1.13','title':'Ensure sshd LoginGraceTime is configured','status': (cis_sshd_status_by_id['5.1.13'] | default('fail'))} }}"
+      "5.1.14": "{{ {'control_id':'5.1.14','title':'Ensure sshd LogLevel is configured','status': (cis_sshd_status_by_id['5.1.14'] | default('fail'))} }}"
+      "5.1.15": "{{ {'control_id':'5.1.15','title':'Ensure sshd MACs are configured','status': (cis_sshd_status_by_id['5.1.15'] | default('blocked_by_missing_information'))} }}"
+      "5.1.16": "{{ {'control_id':'5.1.16','title':'Ensure sshd MaxAuthTries is configured','status': (cis_sshd_status_by_id['5.1.16'] | default('blocked_by_missing_information'))} }}"
+      "5.1.17": "{{ {'control_id':'5.1.17','title':'Ensure sshd MaxSessions is configured','status': (cis_sshd_status_by_id['5.1.17'] | default('blocked_by_missing_information'))} }}"
+      "5.1.18": "{{ {'control_id':'5.1.18','title':'Ensure sshd MaxStartups is configured','status': (cis_sshd_status_by_id['5.1.18'] | default('blocked_by_missing_information'))} }}"
+      "5.1.19": "{{ {'control_id':'5.1.19','title':'Ensure sshd PermitEmptyPasswords is disabled','status': (cis_sshd_status_by_id['5.1.19'] | default('fail'))} }}"
+      "5.1.20": "{{ {'control_id':'5.1.20','title':'Ensure sshd PermitRootLogin is disabled','status': (cis_sshd_status_by_id['5.1.20'] | default('fail'))} }}"
+      "5.1.21": "{{ {'control_id':'5.1.21','title':'Ensure sshd PermitUserEnvironment is disabled','status': (cis_sshd_status_by_id['5.1.21'] | default('fail'))} }}"
+      "5.1.22": "{{ {'control_id':'5.1.22','title':'Ensure sshd UsePAM is enabled','status': (cis_sshd_status_by_id['5.1.22'] | default('fail'))} }}"
+  vars:
+    cis_sshd_status_by_id: >-
+      {%- set out = {} -%}
+      {%- for r in (cis_sshd_control_checks.results | default([])) -%}
+      {%- set _ = out.update({ r.item.id: ('pass' if r.rc == 0 else ('fail' if r.rc == 1 else 'blocked')) }) -%}
+      {%- endfor -%}
+      {{ out }}
+  changed_when: false
+  tags: [cis, audit, alt, sshd, chapter_sshd]
+
+- name: Audit | SSHD | Build chapter summary facts
+  ansible.builtin.set_fact:
+    cis_sshd_chapter:
+      chapter: SSHD
+      sheet: SSHD
+      implemented_controls:
+        - "5.1.1"
+        - "5.1.2"
+        - "5.1.3"
+        - "5.1.4"
+        - "5.1.5"
+        - "5.1.6"
+        - "5.1.7"
+        - "5.1.8"
+        - "5.1.9"
+        - "5.1.10"
+        - "5.1.11"
+        - "5.1.12"
+        - "5.1.13"
+        - "5.1.14"
+        - "5.1.15"
+        - "5.1.16"
+        - "5.1.17"
+        - "5.1.18"
+        - "5.1.19"
+        - "5.1.20"
+        - "5.1.21"
+        - "5.1.22"
+      skipped_controls: []
+      manual_controls: []
+      blocked_controls: >-
+        {{
+          [
+            cis_sshd_result_map['5.1.1'],
+            cis_sshd_result_map['5.1.2'],
+            cis_sshd_result_map['5.1.3'],
+            cis_sshd_result_map['5.1.4'],
+            cis_sshd_result_map['5.1.5'],
+            cis_sshd_result_map['5.1.6'],
+            cis_sshd_result_map['5.1.7'],
+            cis_sshd_result_map['5.1.8'],
+            cis_sshd_result_map['5.1.9'],
+            cis_sshd_result_map['5.1.10'],
+            cis_sshd_result_map['5.1.11'],
+            cis_sshd_result_map['5.1.12'],
+            cis_sshd_result_map['5.1.13'],
+            cis_sshd_result_map['5.1.14'],
+            cis_sshd_result_map['5.1.15'],
+            cis_sshd_result_map['5.1.16'],
+            cis_sshd_result_map['5.1.17'],
+            cis_sshd_result_map['5.1.18'],
+            cis_sshd_result_map['5.1.19'],
+            cis_sshd_result_map['5.1.20'],
+            cis_sshd_result_map['5.1.21'],
+            cis_sshd_result_map['5.1.22']
+          ] | selectattr('status', 'equalto', 'blocked') | map(attribute='control_id') | list
+        }}
+      high_risk_controls:
+        - "5.1.1"
+        - "5.1.2"
+        - "5.1.3"
+        - "5.1.4"
+        - "5.1.5"
+        - "5.1.6"
+        - "5.1.7"
+        - "5.1.8"
+        - "5.1.9"
+        - "5.1.10"
+        - "5.1.11"
+        - "5.1.12"
+        - "5.1.13"
+        - "5.1.14"
+        - "5.1.15"
+        - "5.1.16"
+        - "5.1.17"
+        - "5.1.18"
+        - "5.1.19"
+        - "5.1.20"
+        - "5.1.21"
+        - "5.1.22"
+      offline_assumptions:
+        - "Audit-only tasks use local config/file checks only; no Internet access is required."
+        - "No service restart, package install/remove, or SSH remediation actions are performed."
+        - "Temporary/default SSHD baseline assumptions are inherited and must be replaced with environment-approved values before enforcement decisions."
+      missing_information_placeholders: "{{ cis_sshd_missing_information_placeholders }}"
+      os_tested:
+        distribution: "{{ ansible_distribution | default('unknown') }}"
+        version: "{{ ansible_distribution_version | default('unknown') }}"
+        kernel: "{{ ansible_kernel | default('unknown') }}"
+      commands:
+        - "stat {{ cis_sshd_main_config }}"
+        - "find {{ cis_sshd_config_dir }} -name '*.conf'"
+        - "grep -RPs SSHD directives in sshd_config and sshd_config.d"
+        - "stat -c '%n|%U|%G|%a' {{ cis_sshd_private_keys_glob }}"
+        - "stat -c '%n|%U|%G|%a' {{ cis_sshd_public_keys_glob }}"
+      evidence_records: "{{ cis_sshd_evidence_map }}"
+      result_summary:
+        - "{{ cis_sshd_result_map['5.1.1'] }}"
+        - "{{ cis_sshd_result_map['5.1.2'] }}"
+        - "{{ cis_sshd_result_map['5.1.3'] }}"
+        - "{{ cis_sshd_result_map['5.1.4'] }}"
+        - "{{ cis_sshd_result_map['5.1.5'] }}"
+        - "{{ cis_sshd_result_map['5.1.6'] }}"
+        - "{{ cis_sshd_result_map['5.1.7'] }}"
+        - "{{ cis_sshd_result_map['5.1.8'] }}"
+        - "{{ cis_sshd_result_map['5.1.9'] }}"
+        - "{{ cis_sshd_result_map['5.1.10'] }}"
+        - "{{ cis_sshd_result_map['5.1.11'] }}"
+        - "{{ cis_sshd_result_map['5.1.12'] }}"
+        - "{{ cis_sshd_result_map['5.1.13'] }}"
+        - "{{ cis_sshd_result_map['5.1.14'] }}"
+        - "{{ cis_sshd_result_map['5.1.15'] }}"
+        - "{{ cis_sshd_result_map['5.1.16'] }}"
+        - "{{ cis_sshd_result_map['5.1.17'] }}"
+        - "{{ cis_sshd_result_map['5.1.18'] }}"
+        - "{{ cis_sshd_result_map['5.1.19'] }}"
+        - "{{ cis_sshd_result_map['5.1.20'] }}"
+        - "{{ cis_sshd_result_map['5.1.21'] }}"
+        - "{{ cis_sshd_result_map['5.1.22'] }}"
+  changed_when: false
+  tags: [cis, audit, alt, sshd, chapter_sshd]

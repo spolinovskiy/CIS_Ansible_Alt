@@ -1,0 +1,172 @@
+---
+- name: Audit | SUDO | Initialize chapter tracking
+  ansible.builtin.set_fact:
+    cis_sudo_evidence_records: []
+    cis_sudo_result_summary: []
+  changed_when: false
+  tags: [cis, audit, alt, sudo, chapter_sudo]
+
+- name: Audit | SUDO | 5.2.1 | Gather installed package facts
+  ansible.builtin.package_facts:
+    manager: auto
+  register: cis_5_2_1_package_facts
+  changed_when: false
+  tags: [cis, cis_5_2_1, audit, alt, sudo, chapter_sudo]
+
+- name: Audit | SUDO | 5.2.1 | Record evidence
+  ansible.builtin.set_fact:
+    cis_sudo_evidence_records: "{{ cis_sudo_evidence_records + [ {'control_id': '5.2.1', 'title': 'Ensure sudo is installed', 'status': ('pass' if (ansible_facts.packages.sudo is defined and (ansible_facts.packages.sudo | length) > 0) else 'fail'), 'register': 'cis_5_2_1_package_facts'} ] }}"
+    cis_sudo_result_summary: "{{ cis_sudo_result_summary + [ {'control_id': '5.2.1', 'status': ('pass' if (ansible_facts.packages.sudo is defined and (ansible_facts.packages.sudo | length) > 0) else 'fail')} ] }}"
+  changed_when: false
+  tags: [cis, cis_5_2_1, audit, alt, sudo, chapter_sudo]
+
+- name: Audit | SUDO | 5.2.2 | Check use_pty in sudoers
+  ansible.builtin.shell: >
+    grep -rPi -- '^\h*Defaults\h+([^#\n\r]+,\h*)?use_pty\b' /etc/sudoers /etc/sudoers.d 2>/dev/null
+  register: cis_5_2_2_use_pty
+  failed_when: false
+  changed_when: false
+  tags: [cis, cis_5_2_2, audit, alt, sudo, chapter_sudo]
+
+- name: Audit | SUDO | 5.2.2 | Record evidence
+  ansible.builtin.set_fact:
+    cis_sudo_evidence_records: "{{ cis_sudo_evidence_records + [ {'control_id': '5.2.2', 'title': 'Ensure sudo commands use pty', 'status': ('pass' if cis_5_2_2_use_pty.rc == 0 else ('fail' if cis_5_2_2_use_pty.rc == 1 else 'blocked')), 'register': 'cis_5_2_2_use_pty'} ] }}"
+    cis_sudo_result_summary: "{{ cis_sudo_result_summary + [ {'control_id': '5.2.2', 'status': ('pass' if cis_5_2_2_use_pty.rc == 0 else ('fail' if cis_5_2_2_use_pty.rc == 1 else 'blocked'))} ] }}"
+  changed_when: false
+  tags: [cis, cis_5_2_2, audit, alt, sudo, chapter_sudo]
+
+- name: Audit | SUDO | 5.2.3 | Check sudo logfile directive
+  ansible.builtin.shell: >
+    grep -rPsi "^\h*Defaults\h+([^#]+,\h*)?logfile\h*=\h*(\"|')?\H+(\"|')?(,\h*\H+\h*)*\h*(#.*)?$" /etc/sudoers /etc/sudoers.d 2>/dev/null
+  register: cis_5_2_3_logfile_config
+  failed_when: false
+  changed_when: false
+  tags: [cis, cis_5_2_3, audit, alt, sudo, chapter_sudo]
+
+- name: Audit | SUDO | 5.2.3 | Check default sudo logfile path existence
+  ansible.builtin.stat:
+    path: /var/log/sudo.log
+  register: cis_5_2_3_logfile_stat
+  changed_when: false
+  tags: [cis, cis_5_2_3, audit, alt, sudo, chapter_sudo]
+
+- name: Audit | SUDO | 5.2.3 | Record evidence
+  ansible.builtin.set_fact:
+    cis_sudo_evidence_records: "{{ cis_sudo_evidence_records + [ {'control_id': '5.2.3', 'title': 'Ensure sudo log file exists', 'status': ('pass' if (cis_5_2_3_logfile_config.rc == 0 and cis_5_2_3_logfile_stat.stat.exists) else ('blocked' if cis_5_2_3_logfile_config.rc not in [0, 1] else 'fail')), 'registers': ['cis_5_2_3_logfile_config', 'cis_5_2_3_logfile_stat']} ] }}"
+    cis_sudo_result_summary: "{{ cis_sudo_result_summary + [ {'control_id': '5.2.3', 'status': ('pass' if (cis_5_2_3_logfile_config.rc == 0 and cis_5_2_3_logfile_stat.stat.exists) else ('blocked' if cis_5_2_3_logfile_config.rc not in [0, 1] else 'fail'))} ] }}"
+  changed_when: false
+  tags: [cis, cis_5_2_3, audit, alt, sudo, chapter_sudo]
+
+- name: Audit | SUDO | 5.2.4 | Check for NOPASSWD entries
+  ansible.builtin.shell: >
+    grep -r -- "^[^#].*NOPASSWD" /etc/sudoers /etc/sudoers.d 2>/dev/null
+  register: cis_5_2_4_nopasswd
+  failed_when: false
+  changed_when: false
+  tags: [cis, cis_5_2_4, audit, alt, sudo, chapter_sudo]
+
+- name: Audit | SUDO | 5.2.4 | Record evidence
+  ansible.builtin.set_fact:
+    cis_sudo_evidence_records: "{{ cis_sudo_evidence_records + [ {'control_id': '5.2.4', 'title': 'Ensure users must provide password for privilege escalation', 'status': ('pass' if cis_5_2_4_nopasswd.rc == 1 else ('fail' if cis_5_2_4_nopasswd.rc == 0 else 'blocked')), 'register': 'cis_5_2_4_nopasswd'} ] }}"
+    cis_sudo_result_summary: "{{ cis_sudo_result_summary + [ {'control_id': '5.2.4', 'status': ('pass' if cis_5_2_4_nopasswd.rc == 1 else ('fail' if cis_5_2_4_nopasswd.rc == 0 else 'blocked'))} ] }}"
+  changed_when: false
+  tags: [cis, cis_5_2_4, audit, alt, sudo, chapter_sudo]
+
+- name: Audit | SUDO | 5.2.5 | Check for !authenticate entries
+  ansible.builtin.shell: >
+    grep -r -- "^[^#].*!authenticate" /etc/sudoers /etc/sudoers.d 2>/dev/null
+  register: cis_5_2_5_no_authenticate
+  failed_when: false
+  changed_when: false
+  tags: [cis, cis_5_2_5, audit, alt, sudo, chapter_sudo]
+
+- name: Audit | SUDO | 5.2.5 | Record evidence
+  ansible.builtin.set_fact:
+    cis_sudo_evidence_records: "{{ cis_sudo_evidence_records + [ {'control_id': '5.2.5', 'title': 'Ensure re-authentication for privilege escalation is not disabled globally 585', 'status': ('pass' if cis_5_2_5_no_authenticate.rc == 1 else ('fail' if cis_5_2_5_no_authenticate.rc == 0 else 'blocked')), 'register': 'cis_5_2_5_no_authenticate'} ] }}"
+    cis_sudo_result_summary: "{{ cis_sudo_result_summary + [ {'control_id': '5.2.5', 'status': ('pass' if cis_5_2_5_no_authenticate.rc == 1 else ('fail' if cis_5_2_5_no_authenticate.rc == 0 else 'blocked'))} ] }}"
+  changed_when: false
+  tags: [cis, cis_5_2_5, audit, alt, sudo, chapter_sudo]
+
+- name: Audit | SUDO | 5.2.6 | Read configured timestamp_timeout values
+  ansible.builtin.shell: >
+    grep -rPo -- "timestamp_timeout=\K[0-9]+" /etc/sudoers /etc/sudoers.d 2>/dev/null
+  register: cis_5_2_6_timeout_config
+  failed_when: false
+  changed_when: false
+  tags: [cis, cis_5_2_6, audit, alt, sudo, chapter_sudo]
+
+- name: Audit | SUDO | 5.2.6 | Read effective sudo timeout from sudo -V
+  ansible.builtin.shell: >
+    sudo -V | grep -i "Authentication timestamp timeout:"
+  register: cis_5_2_6_timeout_effective
+  failed_when: false
+  changed_when: false
+  tags: [cis, cis_5_2_6, audit, alt, sudo, chapter_sudo]
+
+- name: Audit | SUDO | 5.2.6 | Record evidence
+  ansible.builtin.set_fact:
+    cis_sudo_evidence_records: "{{ cis_sudo_evidence_records + [ {'control_id': '5.2.6', 'title': 'Ensure sudo authentication timeout is configured correctly', 'status': ('pass' if (cis_5_2_6_timeout_effective.rc == 0 and cis_5_2_6_timeout_config.rc in [0, 1]) else 'blocked'), 'registers': ['cis_5_2_6_timeout_config', 'cis_5_2_6_timeout_effective']} ] }}"
+    cis_sudo_result_summary: "{{ cis_sudo_result_summary + [ {'control_id': '5.2.6', 'status': ('pass' if (cis_5_2_6_timeout_effective.rc == 0 and cis_5_2_6_timeout_config.rc in [0, 1]) else 'blocked')} ] }}"
+  changed_when: false
+  tags: [cis, cis_5_2_6, audit, alt, sudo, chapter_sudo]
+
+- name: Audit | SUDO | 5.2.7 | Check su PAM restriction
+  ansible.builtin.shell: >
+    grep -Pi -- '^\h*auth\h+(required|requisite)\h+pam_wheel\.so.*(use_uid|group=\H+)' /etc/pam.d/su 2>/dev/null
+  register: cis_5_2_7_pam_wheel
+  failed_when: false
+  changed_when: false
+  tags: [cis, cis_5_2_7, audit, alt, sudo, chapter_sudo]
+
+- name: Audit | SUDO | 5.2.7 | Record evidence
+  ansible.builtin.set_fact:
+    cis_sudo_evidence_records: "{{ cis_sudo_evidence_records + [ {'control_id': '5.2.7', 'title': 'Ensure access to the su command is restricted', 'status': ('pass' if cis_5_2_7_pam_wheel.rc == 0 else ('fail' if cis_5_2_7_pam_wheel.rc == 1 else 'blocked')), 'register': 'cis_5_2_7_pam_wheel'} ] }}"
+    cis_sudo_result_summary: "{{ cis_sudo_result_summary + [ {'control_id': '5.2.7', 'status': ('pass' if cis_5_2_7_pam_wheel.rc == 0 else ('fail' if cis_5_2_7_pam_wheel.rc == 1 else 'blocked'))} ] }}"
+  changed_when: false
+  tags: [cis, cis_5_2_7, audit, alt, sudo, chapter_sudo]
+
+- name: Audit | SUDO | Build chapter summary facts
+  ansible.builtin.set_fact:
+    cis_sudo_chapter:
+      chapter: SUDO
+      sheet: SUDO
+      implemented_controls:
+        - "5.2.1"
+        - "5.2.2"
+        - "5.2.3"
+        - "5.2.4"
+        - "5.2.5"
+        - "5.2.6"
+        - "5.2.7"
+      skipped_controls: []
+      manual_controls: []
+      blocked_controls: "{{ cis_sudo_result_summary | selectattr('status', 'equalto', 'blocked') | map(attribute='control_id') | list }}"
+      high_risk_controls:
+        - "5.2.1"
+        - "5.2.2"
+        - "5.2.3"
+        - "5.2.4"
+        - "5.2.5"
+        - "5.2.6"
+        - "5.2.7"
+      offline_assumptions:
+        - "Audit-only tasks use local commands and facts only; no Internet access is required."
+        - "No package install/remove, service restart, or sudoers remediation is performed."
+      os_tested:
+        distribution: "{{ ansible_distribution | default('unknown') }}"
+        version: "{{ ansible_distribution_version | default('unknown') }}"
+        kernel: "{{ ansible_kernel | default('unknown') }}"
+      commands:
+        - "package_facts manager=auto"
+        - "grep -rPi use_pty /etc/sudoers /etc/sudoers.d"
+        - "grep -rPsi logfile=... /etc/sudoers /etc/sudoers.d"
+        - "stat /var/log/sudo.log"
+        - "grep NOPASSWD /etc/sudoers /etc/sudoers.d"
+        - "grep !authenticate /etc/sudoers /etc/sudoers.d"
+        - "grep timestamp_timeout /etc/sudoers /etc/sudoers.d"
+        - "sudo -V | grep Authentication timestamp timeout"
+        - "grep pam_wheel /etc/pam.d/su"
+      evidence_records: "{{ cis_sudo_evidence_records }}"
+      result_summary: "{{ cis_sudo_result_summary }}"
+  changed_when: false
+  tags: [cis, audit, alt, sudo, chapter_sudo]

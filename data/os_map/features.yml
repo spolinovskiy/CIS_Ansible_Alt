@@ -1,0 +1,76 @@
+---
+metadata:
+  schema_version: canonical-os-map-v1
+  project_os: alt
+  generated_by_task: ALT-0005
+  generated_at: "2026-04-28T00:00:00Z"
+  evidence_level: mapping_only_not_lab_tested
+
+project_os: alt
+features:
+  package_management:
+    apt_rpm: { status: candidate_unverified, notes: "Expected ALT package frontend; use only with local repository gates." }
+    rpm_database: { status: candidate_unverified }
+    internet_repo_required: { status: false }
+  init_system:
+    systemd: { status: candidate_unverified }
+    sysvinit_fallback: { status: unknown }
+  security_frameworks:
+    selinux: { status: unknown }
+    apparmor: { status: unknown }
+    alt_domain_or_mandatory_access_control: { status: unknown, notes: "Do not assume MAC framework behavior without ALT host evidence." }
+  bootloader:
+    grub: { status: candidate_unverified }
+    grub2: { status: candidate_unverified }
+    efi_layout: { status: unknown }
+    automatic_reboot_allowed: { status: false }
+  pam_layout:
+    debian_common_files: { status: debian_reference_only_not_alt_verified }
+    service_specific_files: { status: candidate_unverified }
+    authselect: { status: unknown }
+  logging:
+    journald: { status: candidate_unverified }
+    rsyslog: { status: candidate_unverified }
+    systemd_journal_remote: { status: unknown }
+    auditd: { status: candidate_unverified }
+    logrotate: { status: candidate_unverified }
+  time_sync:
+    chrony: { status: candidate_unverified }
+    systemd_timesyncd: { status: unknown }
+    ntp_legacy: { status: unknown }
+    single_daemon_required_by_scope: { status: true }
+  firewall:
+    nftables: { status: candidate_unverified }
+    iptables: { status: candidate_unverified }
+    default_deny_allowed_without_approval: { status: false }
+  filesystem:
+    kernel_module_blacklist_via_modprobe_d: { status: candidate_unverified }
+    fstab_mount_options: { status: candidate_unverified }
+    separate_partition_checks: { status: candidate_unverified }
+  network_sysctl:
+    proc_sys_net_ipv4: { status: candidate_unverified }
+    proc_sys_net_ipv6: { status: candidate_unverified }
+    persistent_sysctl_d: { status: candidate_unverified }
+  ot_safety:
+    audit_only_default: true
+    remediation_enabled_default: false
+    package_install_allowed_default: false
+    local_repository_defined_default: false
+    destructive_changes_allowed_default: false
+    service_changes_require_approved_service_list: true
+    ssh_changes_require_emergency_access_procedure: true
+    reboot_automation_allowed: false
+
+control_area_feature_map:
+  SUDO: [package_management, pam_layout, ot_safety]
+  Bootloader: [bootloader, ot_safety]
+  PAM: [pam_layout, security_frameworks, ot_safety]
+  "Cron&At": [init_system, filesystem]
+  SSHD: [init_system, ot_safety]
+  Filesystem: [filesystem]
+  "Time Sync": [time_sync, init_system, ot_safety]
+  Logging: [logging, init_system, ot_safety]
+  SERVICES: [init_system, firewall, ot_safety]
+  "Network Kernel Modules": [filesystem, network_sysctl]
+  "Network Devices": [network_sysctl, firewall]
+  Packages: [package_management]

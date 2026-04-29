@@ -1,0 +1,11 @@
+---
+- name: ALT CIS audit
+  hosts: alt_linux
+  gather_facts: true
+  vars:
+    cis_remediation_enabled: false
+  roles:
+    - role: cis_common
+      tags: [cis, common, audit, alt]
+    - role: cis_audit
+      tags: [cis, audit, alt]

@@ -1,0 +1,12 @@
+---
+- name: ALT CIS remediation
+  hosts: alt_linux
+  gather_facts: true
+  vars:
+    cis_remediation_enabled: false
+    cis_destructive_changes_allowed: false
+  roles:
+    - role: cis_common
+      tags: [cis, common, remediate, alt]
+    - role: cis_remediate
+      tags: [cis, remediate, alt]

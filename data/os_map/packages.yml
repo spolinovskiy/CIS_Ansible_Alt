@@ -1,0 +1,219 @@
+---
+metadata:
+  schema_version: canonical-os-map-v1
+  project_os: alt
+  generated_by_task: ALT-0005
+  generated_at: "2026-04-28T00:00:00Z"
+  evidence_level: mapping_only_not_lab_tested
+
+project_os: alt
+package_manager:
+  primary: apt_rpm
+  fallback_query: rpm
+  status: candidate_unverified
+  notes: "ALT Linux commonly uses apt-rpm over RPM packages; package operations remain disabled unless local repository and approval gates are set."
+
+package_operation_guards:
+  install_allowed_when:
+    remediation_enabled: true
+    package_install_allowed: true
+    local_repository_defined: true
+  remove_allowed_when:
+    remediation_enabled: true
+    package_install_allowed: true
+    local_repository_defined: true
+    destructive_changes_allowed: true
+  internet_repositories_allowed: false
+  missing_package_source_result: blocked_by_missing_information
+
+manager_commands:
+  query_installed:
+    command: "rpm -q <package>"
+    status: candidate_unverified
+    changed_when: false
+  query_all_installed:
+    command: "rpm -qa"
+    status: candidate_unverified
+    changed_when: false
+  install:
+    command: "apt-get install <package>"
+    status: candidate_unverified
+    guards:
+      - remediation_enabled
+      - package_install_allowed
+      - local_repository_defined
+  remove:
+    command: "apt-get remove <package>"
+    status: candidate_unverified
+    guards:
+      - remediation_enabled
+      - package_install_allowed
+      - local_repository_defined
+      - destructive_changes_allowed
+  repository_policy_check:
+    command: "apt-cache policy"
+    status: candidate_unverified
+    changed_when: false
+
+packages:
+  sudo:
+    package_names:
+      - name: sudo
+        status: candidate_unverified
+    controls:
+      - "5.2.1"
+  pam:
+    package_names:
+      - name: pam
+        status: candidate_unverified
+      - name: libpam
+        status: unknown
+      - name: libpam-modules
+        status: debian_reference_only_not_alt_verified
+      - name: libpam-pwquality
+        status: debian_reference_only_not_alt_verified
+      - name: pam_pkcs11
+        status: unknown
+    controls:
+      - "5.3.1.1"
+      - "5.3.1.2"
+      - "5.3.1.3"
+    notes: "ALT PAM package split must be verified on a target or approved local repository before package checks/remediation are authoritative."
+  ssh_server:
+    package_names:
+      - name: openssh-server
+        status: candidate_unverified
+      - name: openssh
+        status: unknown
+    controls:
+      - "5.1.1"
+      - "5.1.22"
+  cron_at:
+    package_names:
+      - name: cronie
+        status: candidate_unverified
+      - name: vixie-cron
+        status: unknown
+      - name: at
+        status: candidate_unverified
+    controls:
+      - "2.4.1.1"
+      - "2.4.2.1"
+  time_sync:
+    package_names:
+      - name: chrony
+        status: candidate_unverified
+      - name: systemd-timesyncd
+        status: unknown
+      - name: systemd
+        status: candidate_unverified
+    controls:
+      - "2.3.1"
+      - "2.3.2.1"
+      - "2.3.2.2"
+      - "2.3.3.1"
+      - "2.3.3.3"
+  logging:
+    package_names:
+      - name: systemd
+        status: candidate_unverified
+      - name: rsyslog
+        status: candidate_unverified
+      - name: logrotate
+        status: candidate_unverified
+      - name: audit
+        status: candidate_unverified
+      - name: auditd
+        status: unknown
+      - name: audispd-plugins
+        status: unknown
+    controls:
+      - "6.1.1.1"
+      - "6.1.3.1"
+      - "6.2.1.1"
+  bootloader:
+    package_names:
+      - name: grub2
+        status: candidate_unverified
+      - name: grub2-pc
+        status: unknown
+      - name: grub2-efi
+        status: unknown
+    controls:
+      - "1.4.1"
+      - "1.4.2"
+  filesystem_and_kernel:
+    package_names:
+      - name: kmod
+        status: candidate_unverified
+      - name: util-linux
+        status: candidate_unverified
+      - name: e2fsprogs
+        status: candidate_unverified
+    controls:
+      - "1.1.1.1"
+      - "1.1.2.7.4"
+  network_tools:
+    package_names:
+      - name: iproute2
+        status: candidate_unverified
+      - name: nftables
+        status: candidate_unverified
+      - name: iptables
+        status: candidate_unverified
+    controls:
+      - "3.3.1"
+      - "3.3.11"
+  service_clients_and_servers:
+    package_names:
+      - name: autofs
+        status: candidate_unverified
+      - name: avahi-daemon
+        status: candidate_unverified
+      - name: dhcp-server
+        status: unknown
+      - name: bind
+        status: candidate_unverified
+      - name: dnsmasq
+        status: candidate_unverified
+      - name: vsftpd
+        status: candidate_unverified
+      - name: openldap-servers
+        status: unknown
+      - name: nfs-server
+        status: candidate_unverified
+      - name: rpcbind
+        status: candidate_unverified
+      - name: rsync
+        status: candidate_unverified
+      - name: samba
+        status: candidate_unverified
+      - name: net-snmp
+        status: candidate_unverified
+      - name: tftp-server
+        status: unknown
+      - name: squid
+        status: candidate_unverified
+      - name: apache2
+        status: candidate_unverified
+      - name: nginx
+        status: candidate_unverified
+      - name: xinetd
+        status: candidate_unverified
+      - name: xorg-server
+        status: candidate_unverified
+      - name: postfix
+        status: candidate_unverified
+      - name: ypbind
+        status: unknown
+      - name: rsh
+        status: unknown
+      - name: talk
+        status: unknown
+      - name: telnet
+        status: candidate_unverified
+      - name: openldap-clients
+        status: unknown
+      - name: ftp
+        status: unknown
+    notes: "Service/client package names are candidates only. Do not remove packages automatically in OT environments."

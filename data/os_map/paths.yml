@@ -1,0 +1,93 @@
+---
+metadata:
+  schema_version: canonical-os-map-v1
+  project_os: alt
+  generated_by_task: ALT-0005
+  generated_at: "2026-04-28T00:00:00Z"
+  evidence_level: mapping_only_not_lab_tested
+
+project_os: alt
+paths:
+  sudo:
+    sudoers: { path: /etc/sudoers, status: candidate_unverified }
+    sudoers_d: { path: /etc/sudoers.d, status: candidate_unverified }
+  pam:
+    pam_d: { path: /etc/pam.d, status: candidate_unverified }
+    su: { path: /etc/pam.d/su, status: candidate_unverified }
+    common_auth: { path: /etc/pam.d/common-auth, status: debian_reference_only_not_alt_verified }
+    common_account: { path: /etc/pam.d/common-account, status: debian_reference_only_not_alt_verified }
+    common_password: { path: /etc/pam.d/common-password, status: debian_reference_only_not_alt_verified }
+    common_session: { path: /etc/pam.d/common-session, status: debian_reference_only_not_alt_verified }
+    pwquality_conf: { path: /etc/security/pwquality.conf, status: candidate_unverified }
+    pwquality_conf_d: { path: /etc/security/pwquality.conf.d, status: candidate_unverified }
+    faillock_conf: { path: /etc/security/faillock.conf, status: candidate_unverified }
+    pwhistory_conf: { path: /etc/security/pwhistory.conf, status: candidate_unverified }
+    login_defs: { path: /etc/login.defs, status: candidate_unverified }
+  sshd:
+    main_config: { path: /etc/ssh/sshd_config, status: candidate_unverified }
+    config_dir: { path: /etc/ssh/sshd_config.d, status: candidate_unverified }
+    host_private_keys_glob: { path: /etc/ssh/ssh_host_*_key, status: candidate_unverified }
+    host_public_keys_glob: { path: /etc/ssh/ssh_host_*_key.pub, status: candidate_unverified }
+  cron_at:
+    crontab: { path: /etc/crontab, status: candidate_unverified }
+    cron_hourly: { path: /etc/cron.hourly, status: candidate_unverified }
+    cron_daily: { path: /etc/cron.daily, status: candidate_unverified }
+    cron_weekly: { path: /etc/cron.weekly, status: candidate_unverified }
+    cron_monthly: { path: /etc/cron.monthly, status: candidate_unverified }
+    cron_d: { path: /etc/cron.d, status: candidate_unverified }
+    cron_allow: { path: /etc/cron.allow, status: candidate_unverified }
+    cron_deny: { path: /etc/cron.deny, status: candidate_unverified }
+    at_allow: { path: /etc/at.allow, status: candidate_unverified }
+    at_deny: { path: /etc/at.deny, status: candidate_unverified }
+  time_sync:
+    chrony_conf: { path: /etc/chrony.conf, status: candidate_unverified }
+    chrony_conf_d: { path: /etc/chrony.d, status: unknown }
+    timesyncd_conf: { path: /etc/systemd/timesyncd.conf, status: unknown }
+    timesyncd_conf_d: { path: /etc/systemd/timesyncd.conf.d, status: unknown }
+  logging:
+    journald_conf: { path: /etc/systemd/journald.conf, status: candidate_unverified }
+    journald_conf_d: { path: /etc/systemd/journald.conf.d, status: candidate_unverified }
+    journal_remote_conf: { path: /etc/systemd/journal-remote.conf, status: unknown }
+    journal_upload_conf: { path: /etc/systemd/journal-upload.conf, status: unknown }
+    rsyslog_conf: { path: /etc/rsyslog.conf, status: candidate_unverified }
+    rsyslog_d: { path: /etc/rsyslog.d, status: candidate_unverified }
+    logrotate_conf: { path: /etc/logrotate.conf, status: candidate_unverified }
+    logrotate_d: { path: /etc/logrotate.d, status: candidate_unverified }
+    auditd_conf: { path: /etc/audit/auditd.conf, status: candidate_unverified }
+    audit_rules_d: { path: /etc/audit/rules.d, status: candidate_unverified }
+    audit_rules_file: { path: /etc/audit/audit.rules, status: candidate_unverified }
+    audit_log_dir: { path: /var/log/audit, status: candidate_unverified }
+  bootloader:
+    grub_cfg: { path: /boot/grub/grub.cfg, status: candidate_unverified }
+    grub2_cfg: { path: /boot/grub2/grub.cfg, status: unknown }
+    grub_default: { path: /etc/default/grub, status: candidate_unverified }
+    grub_d: { path: /etc/grub.d, status: candidate_unverified }
+    efi_grub_cfg: { path: /boot/efi/EFI/altlinux/grub.cfg, status: unknown }
+  filesystem:
+    fstab: { path: /etc/fstab, status: candidate_unverified }
+    modprobe_d: { path: /etc/modprobe.d, status: candidate_unverified }
+    modules_load_d: { path: /etc/modules-load.d, status: candidate_unverified }
+    proc_sys: { path: /proc/sys, status: candidate_unverified }
+    sysctl_conf: { path: /etc/sysctl.conf, status: candidate_unverified }
+    sysctl_d: { path: /etc/sysctl.d, status: candidate_unverified }
+    mount_points:
+      - { path: /tmp, status: candidate_unverified }
+      - { path: /dev/shm, status: candidate_unverified }
+      - { path: /home, status: candidate_unverified }
+      - { path: /var, status: candidate_unverified }
+      - { path: /var/tmp, status: candidate_unverified }
+      - { path: /var/log, status: candidate_unverified }
+      - { path: /var/log/audit, status: candidate_unverified }
+  banners:
+    motd: { path: /etc/motd, status: candidate_unverified }
+    issue: { path: /etc/issue, status: candidate_unverified }
+    issue_net: { path: /etc/issue.net, status: candidate_unverified }
+  packages:
+    apt_sources_list: { path: /etc/apt/sources.list, status: candidate_unverified }
+    apt_sources_list_d: { path: /etc/apt/sources.list.d, status: candidate_unverified }
+    rpm_db: { path: /var/lib/rpm, status: candidate_unverified }
+  user_account_files:
+    passwd: { path: /etc/passwd, status: candidate_unverified }
+    shadow: { path: /etc/shadow, status: candidate_unverified }
+    group: { path: /etc/group, status: candidate_unverified }
+    gshadow: { path: /etc/gshadow, status: candidate_unverified }
