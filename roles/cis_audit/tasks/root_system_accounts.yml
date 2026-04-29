@@ -1,0 +1,227 @@
+---
+- name: Audit | Root&System Accounts | Define placeholders and defaults
+  ansible.builtin.set_fact:
+    cis_rsa_system_uid_max: "{{ cis_rsa_system_uid_max | default('MISSING') }}"
+    cis_rsa_root_gid0_account_exceptions: "{{ cis_rsa_root_gid0_account_exceptions | default([]) }}"
+    cis_rsa_gid0_group_exceptions: "{{ cis_rsa_gid0_group_exceptions | default([]) }}"
+    cis_rsa_root_path_exceptions: "{{ cis_rsa_root_path_exceptions | default([]) }}"
+    cis_rsa_root_umask_patterns: "{{ cis_rsa_root_umask_patterns | default([]) }}"
+    cis_rsa_system_shell_exceptions: "{{ cis_rsa_system_shell_exceptions | default([]) }}"
+    cis_rsa_nologin_shell_patterns: "{{ cis_rsa_nologin_shell_patterns | default(['nologin', 'false']) }}"
+    cis_rsa_non_login_unlocked_exceptions: "{{ cis_rsa_non_login_unlocked_exceptions | default([]) }}"
+    cis_rsa_tmout_max_seconds: "{{ cis_rsa_tmout_max_seconds | default('MISSING') }}"
+    cis_rsa_default_umask_patterns: "{{ cis_rsa_default_umask_patterns | default([]) }}"
+    cis_rsa_missing_information_placeholders:
+      - "MISSING_OT_BASELINE:approved_system_uid_max"
+      - "MISSING_OT_BASELINE:approved_root_gid0_account_exceptions"
+      - "MISSING_OT_BASELINE:approved_gid0_group_exceptions"
+      - "MISSING_OT_BASELINE:approved_root_path_exceptions"
+      - "MISSING_OT_BASELINE:approved_root_umask_patterns"
+      - "MISSING_OT_BASELINE:approved_system_shell_exceptions"
+      - "MISSING_OT_BASELINE:approved_non_login_unlocked_exceptions"
+      - "MISSING_OT_BASELINE:approved_tmout_max_seconds"
+      - "MISSING_OT_BASELINE:approved_default_umask_patterns"
+  changed_when: false
+  tags: [cis, audit, alt, root_system_accounts, chapter_root_system_accounts]
+
+- name: Audit | Root&System Accounts | 5.4.2.1 collect UID 0 accounts
+  ansible.builtin.command: "awk -F: '($3 == 0) { print $1 }' /etc/passwd"
+  register: cis_5_4_2_1_uid0_accounts
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_5_4_2_1, audit, alt, root_system_accounts, chapter_root_system_accounts]
+
+- name: Audit | Root&System Accounts | 5.4.2.2 collect GID 0 accounts
+  ansible.builtin.command: "awk -F: '($4 == 0) { print $1 }' /etc/passwd"
+  register: cis_5_4_2_2_gid0_accounts
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_5_4_2_2, audit, alt, root_system_accounts, chapter_root_system_accounts]
+
+- name: Audit | Root&System Accounts | 5.4.2.3 collect GID 0 groups
+  ansible.builtin.command: "awk -F: '($3 == 0) { print $1 }' /etc/group"
+  register: cis_5_4_2_3_gid0_groups
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_5_4_2_3, audit, alt, root_system_accounts, chapter_root_system_accounts]
+
+- name: Audit | Root&System Accounts | 5.4.2.4 collect root passwd status
+  ansible.builtin.command: "passwd -S root"
+  register: cis_5_4_2_4_root_passwd_status
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_5_4_2_4, audit, alt, root_system_accounts, chapter_root_system_accounts]
+
+- name: Audit | Root&System Accounts | 5.4.2.5 check root PATH integrity
+  ansible.builtin.shell: |
+    PATH_VALUE="$(sudo -Hiu root env | awk -F= '/^PATH=/{print $2}')"
+    [ -n "$PATH_VALUE" ] || PATH_VALUE="$PATH"
+    IFS=':' read -r -a path_parts <<< "$PATH_VALUE"
+    if [ "${PATH_VALUE}" != "${PATH_VALUE%:}" ]; then
+      echo "TRAILING_COLON"
+    fi
+    for p in "${path_parts[@]}"; do
+      if [ -z "$p" ]; then
+        echo "EMPTY_PATH_SEGMENT"
+        continue
+      fi
+      if [ "$p" = "." ]; then
+        echo "CURRENT_DIRECTORY_IN_PATH"
+      fi
+      if [ ! -d "$p" ]; then
+        echo "NOT_A_DIRECTORY:$p"
+        continue
+      fi
+      owner="$(stat -c '%U' "$p" 2>/dev/null || true)"
+      perms="$(stat -c '%a' "$p" 2>/dev/null || true)"
+      if [ "$owner" != "root" ]; then
+        echo "NOT_ROOT_OWNED:$p:$owner"
+      fi
+      if [ -n "$perms" ] && [ "$perms" -gt 755 ]; then
+        echo "PERMS_TOO_PERMISSIVE:$p:$perms"
+      fi
+    done
+  register: cis_5_4_2_5_root_path_integrity
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_5_4_2_5, audit, alt, root_system_accounts, chapter_root_system_accounts]
+
+- name: Audit | Root&System Accounts | 5.4.2.6 collect root umask config
+  ansible.builtin.shell: "grep -Psi -- '^\\h*umask\\h+' /root/.bash_profile /root/.bashrc /root/.profile 2>/dev/null"
+  register: cis_5_4_2_6_root_umask
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_5_4_2_6, audit, alt, root_system_accounts, chapter_root_system_accounts]
+
+- name: Audit | Root&System Accounts | 5.4.2.7 collect system accounts with valid shells
+  ansible.builtin.shell: |
+    uid_min="$(awk '/^\s*UID_MIN\s+/ {print $2; exit}' /etc/login.defs 2>/dev/null)"
+    [ -n "$uid_min" ] || uid_min=1000
+    awk -F: -v uid_min="$uid_min" '(
+      $3 > 0 && $3 < uid_min &&
+      $1 !~ /^(root|halt|sync|shutdown|nfsnobody)$/ &&
+      $7 !~ /(\/nologin|\/false)$/
+    ) {print $1":"$3":"$7}' /etc/passwd
+  register: cis_5_4_2_7_system_valid_shells
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_5_4_2_7, audit, alt, root_system_accounts, chapter_root_system_accounts]
+
+- name: Audit | Root&System Accounts | 5.4.2.8 collect non-login accounts not locked
+  ansible.builtin.shell: |
+    awk -F: '($1 != "root" && $7 ~ /(\/nologin|\/false)$/) {print $1}' /etc/passwd | while read -r user; do
+      [ -n "$user" ] || continue
+      pstate="$(awk -F: -v u="$user" '($1==u){print $2; exit}' /etc/shadow 2>/dev/null)"
+      case "$pstate" in
+        '!'*|'*'|'!!')
+          ;;
+        *)
+          echo "$user:$pstate"
+          ;;
+      esac
+    done
+  register: cis_5_4_2_8_non_login_not_locked
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_5_4_2_8, audit, alt, root_system_accounts, chapter_root_system_accounts]
+
+- name: Audit | Root&System Accounts | 5.4.3.1 check nologin in shells
+  ansible.builtin.shell: "grep -Ps '^\\h*([^#\\n\\r]+)?/nologin\\b' /etc/shells"
+  register: cis_5_4_3_1_nologin_in_shells
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_5_4_3_1, audit, alt, root_system_accounts, chapter_root_system_accounts]
+
+- name: Audit | Root&System Accounts | 5.4.3.2 collect TMOUT configuration
+  ansible.builtin.shell: |
+    grep -RPs -- '^\s*(typeset\s+-xr\s+TMOUT=|readonly\s+TMOUT=|export\s+TMOUT=|TMOUT=)' \
+      /etc/profile /etc/profile.d /etc/bashrc /etc/bash.bashrc /etc/zshrc /etc/zprofile 2>/dev/null
+  register: cis_5_4_3_2_tmout_config
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_5_4_3_2, audit, alt, root_system_accounts, chapter_root_system_accounts]
+
+- name: Audit | Root&System Accounts | 5.4.3.3 collect default umask configuration
+  ansible.builtin.shell: |
+    grep -RPs -- '^\s*umask\s+' /etc/profile /etc/profile.d /etc/bashrc /etc/bash.bashrc /etc/login.defs 2>/dev/null
+  register: cis_5_4_3_3_default_umask
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_5_4_3_3, audit, alt, root_system_accounts, chapter_root_system_accounts]
+
+- name: Audit | Root&System Accounts | Build chapter summary facts
+  ansible.builtin.set_fact:
+    cis_root_system_accounts_chapter:
+      chapter: "Root&System Accounts"
+      sheet: "Root&System Accounts"
+      implemented_controls:
+        - "5.4.2.1"
+        - "5.4.2.2"
+        - "5.4.2.3"
+        - "5.4.2.4"
+        - "5.4.2.5"
+        - "5.4.2.6"
+        - "5.4.2.7"
+        - "5.4.2.8"
+        - "5.4.3.1"
+        - "5.4.3.2"
+        - "5.4.3.3"
+      skipped_controls: []
+      manual_controls:
+        - "5.4.2.5"
+        - "5.4.2.7"
+        - "5.4.2.8"
+        - "5.4.3.2"
+        - "5.4.3.3"
+      blocked_controls: []
+      high_risk_controls:
+        - "5.4.2.1"
+        - "5.4.2.2"
+        - "5.4.2.3"
+        - "5.4.2.4"
+        - "5.4.2.5"
+        - "5.4.2.6"
+        - "5.4.2.7"
+        - "5.4.2.8"
+        - "5.4.3.1"
+        - "5.4.3.2"
+        - "5.4.3.3"
+      missing_information_placeholders: "{{ cis_rsa_missing_information_placeholders }}"
+      offline_assumptions:
+        - "Audit-only tasks use local account/profile files and local command output only; no Internet access is required."
+        - "No account, password, shell, path, or profile remediation actions are performed."
+      os_tested:
+        distribution: "{{ ansible_distribution | default('unknown') }}"
+        version: "{{ ansible_distribution_version | default('unknown') }}"
+        kernel: "{{ ansible_kernel | default('unknown') }}"
+      commands:
+        - "awk over /etc/passwd, /etc/group, /etc/shadow, /etc/login.defs"
+        - "passwd -S root"
+        - "grep over /etc/shells, /etc/profile*, /etc/bash* and /root shell init files"
+        - "stat checks for root PATH directory ownership and permissions"
+      evidence_records:
+        "5.4.2.1": { register: "cis_5_4_2_1_uid0_accounts", findings: "{{ cis_5_4_2_1_uid0_accounts.stdout_lines | default([]) }}" }
+        "5.4.2.2": { register: "cis_5_4_2_2_gid0_accounts", findings: "{{ cis_5_4_2_2_gid0_accounts.stdout_lines | default([]) }}", placeholders: ["MISSING_OT_BASELINE:approved_root_gid0_account_exceptions"] }
+        "5.4.2.3": { register: "cis_5_4_2_3_gid0_groups", findings: "{{ cis_5_4_2_3_gid0_groups.stdout_lines | default([]) }}", placeholders: ["MISSING_OT_BASELINE:approved_gid0_group_exceptions"] }
+        "5.4.2.4": { register: "cis_5_4_2_4_root_passwd_status", findings: "{{ cis_5_4_2_4_root_passwd_status.stdout_lines | default([]) }}" }
+        "5.4.2.5": { register: "cis_5_4_2_5_root_path_integrity", findings: "{{ cis_5_4_2_5_root_path_integrity.stdout_lines | default([]) }}", placeholders: ["MISSING_OT_BASELINE:approved_root_path_exceptions"] }
+        "5.4.2.6": { register: "cis_5_4_2_6_root_umask", findings: "{{ cis_5_4_2_6_root_umask.stdout_lines | default([]) }}", placeholders: ["MISSING_OT_BASELINE:approved_root_umask_patterns"] }
+        "5.4.2.7": { register: "cis_5_4_2_7_system_valid_shells", findings: "{{ cis_5_4_2_7_system_valid_shells.stdout_lines | default([]) }}", placeholders: ["MISSING_OT_BASELINE:approved_system_uid_max", "MISSING_OT_BASELINE:approved_system_shell_exceptions"] }
+        "5.4.2.8": { register: "cis_5_4_2_8_non_login_not_locked", findings: "{{ cis_5_4_2_8_non_login_not_locked.stdout_lines | default([]) }}", placeholders: ["MISSING_OT_BASELINE:approved_non_login_unlocked_exceptions"] }
+        "5.4.3.1": { register: "cis_5_4_3_1_nologin_in_shells", findings: "{{ cis_5_4_3_1_nologin_in_shells.stdout_lines | default([]) }}" }
+        "5.4.3.2": { register: "cis_5_4_3_2_tmout_config", findings: "{{ cis_5_4_3_2_tmout_config.stdout_lines | default([]) }}", placeholders: ["MISSING_OT_BASELINE:approved_tmout_max_seconds"] }
+        "5.4.3.3": { register: "cis_5_4_3_3_default_umask", findings: "{{ cis_5_4_3_3_default_umask.stdout_lines | default([]) }}", placeholders: ["MISSING_OT_BASELINE:approved_default_umask_patterns"] }
+      result_summary:
+        - { control_id: "5.4.2.1", title: "Ensure root is the only UID 0 account", status: "{{ 'pass' if (cis_5_4_2_1_uid0_accounts.stdout_lines | default([]) | sort) == ['root'] else 'fail' }}" }
+        - { control_id: "5.4.2.2", title: "Ensure root is the only GID 0 account", status: "{{ 'manual_review_required' if (cis_rsa_root_gid0_account_exceptions | length) == 0 else ('pass' if ((cis_5_4_2_2_gid0_accounts.stdout_lines | default([]) | difference(['root'] + cis_rsa_root_gid0_account_exceptions)) | length) == 0 else 'fail') }}" }
+        - { control_id: "5.4.2.3", title: "Ensure group root is the only GID 0 group", status: "{{ 'manual_review_required' if (cis_rsa_gid0_group_exceptions | length) == 0 else ('pass' if ((cis_5_4_2_3_gid0_groups.stdout_lines | default([]) | difference(['root'] + cis_rsa_gid0_group_exceptions)) | length) == 0 else 'fail') }}" }
+        - { control_id: "5.4.2.4", title: "Ensure root account access is controlled", status: "{{ 'pass' if (cis_5_4_2_4_root_passwd_status.stdout | default('') | regex_search('^root\\s+(P|L)\\b')) else 'fail' }}" }
+        - { control_id: "5.4.2.5", title: "Ensure root path integrity", status: "{{ 'manual_review_required' if (cis_rsa_root_path_exceptions | length) == 0 else ('pass' if ((cis_5_4_2_5_root_path_integrity.stdout_lines | default([]) | difference(cis_rsa_root_path_exceptions)) | length) == 0 else 'fail') }}" }
+        - { control_id: "5.4.2.6", title: "Ensure root user umask is configured", status: "{{ 'manual_review_required' if (cis_rsa_root_umask_patterns | length) == 0 else ('pass' if ((cis_5_4_2_6_root_umask.stdout | default('')) is search((cis_rsa_root_umask_patterns | join('|')))) else 'fail') }}" }
+        - { control_id: "5.4.2.7", title: "Ensure system accounts do not have a valid login shell", status: "{{ 'manual_review_required' if (cis_rsa_system_shell_exceptions | length) == 0 else ('pass' if ((cis_5_4_2_7_system_valid_shells.stdout_lines | default([]) | map('regex_replace', ':.*$', '') | list | difference(cis_rsa_system_shell_exceptions)) | length) == 0 else 'fail') }}" }
+        - { control_id: "5.4.2.8", title: "Ensure accounts without a valid login shell are locked", status: "{{ 'manual_review_required' if (cis_rsa_non_login_unlocked_exceptions | length) == 0 else ('pass' if ((cis_5_4_2_8_non_login_not_locked.stdout_lines | default([]) | map('regex_replace', ':.*$', '') | list | difference(cis_rsa_non_login_unlocked_exceptions)) | length) == 0 else 'fail') }}" }
+        - { control_id: "5.4.3.1", title: "Ensure nologin is not listed in /etc/shells", status: "{{ 'pass' if (cis_5_4_3_1_nologin_in_shells.stdout_lines | default([]) | length) == 0 else 'fail' }}" }
+        - { control_id: "5.4.3.2", title: "Ensure default user shell timeout is configured", status: "{{ 'manual_review_required' if cis_rsa_tmout_max_seconds == 'MISSING' else ('pass' if ((cis_5_4_3_2_tmout_config.stdout | default('')) is search('TMOUT=([1-8]?[0-9]{1,2}|900)\\b') and (cis_5_4_3_2_tmout_config.stdout | default('')) is search('readonly\\s+TMOUT|typeset\\s+-xr\\s+TMOUT') and (cis_5_4_3_2_tmout_config.stdout | default('')) is search('export\\s+TMOUT')) else 'fail') }}" }
+        - { control_id: "5.4.3.3", title: "Ensure default user umask is configured", status: "{{ 'manual_review_required' if (cis_rsa_default_umask_patterns | length) == 0 else ('pass' if ((cis_5_4_3_3_default_umask.stdout | default('')) is search((cis_rsa_default_umask_patterns | join('|')))) else 'fail') }}" }
+  changed_when: false
+  tags: [cis, audit, alt, root_system_accounts, chapter_root_system_accounts]

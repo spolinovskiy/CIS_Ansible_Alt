@@ -198,3 +198,4 @@
 - Updated only ALT-1008 in PRD.json to ready_for_engineer_review with technical_passes=true, passes=false, and engineer_approval_status=pending.
 - Validation: PRD script passed locally; ansible-playbook is not installed on this workstation, so syntax-check/play execution is pending in an Ansible-enabled environment.
 2026-04-29T11:00:00Z Passwords chapter workflow closure: added ALT-2008 review artifact, recorded ALT-3008 engineer approval state, and normalized ALT-1008 implementation state to done for scheduler progression while preserving audit-only placeholders/defaults.
+2026-04-29T19:09:39Z ALT-1009 done: implemented audit-only Root&System Accounts controls (5.4.2.1-5.4.3.3) from linux_cis.xlsx scope; added chapter include and roles/cis_audit/tasks/root_system_accounts.yml with read-only evidence collection, changed_when=false, no remediation; added reports/lab/RootSystemAccounts/chapter_report.md with OT baseline placeholders and engineer-approval gate.

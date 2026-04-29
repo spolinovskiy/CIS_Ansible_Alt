@@ -38,3 +38,8 @@
   ansible.builtin.include_tasks:
     file: passwords.yml
   tags: [cis, audit, alt, passwords, chapter_passwords]
+
+- name: Audit | Root&System Accounts | Include chapter controls
+  ansible.builtin.include_tasks:
+    file: root_system_accounts.yml
+  tags: [cis, audit, alt, root_system_accounts, chapter_root_system_accounts]
