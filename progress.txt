@@ -189,3 +189,11 @@
 - Updated only ALT-1007 in PRD.json to ready_for_engineer_review with technical_passes=true, passes=false, and engineer_approval_status=pending.
 - Validation: PRD script passed locally; ansible-playbook is not installed on this workstation, so syntax-check/play execution is pending in an Ansible-enabled environment.
 2026-04-29T10:40:00Z FilePermission chapter workflow closure: added ALT-2007 review artifact, recorded ALT-3007 engineer approval state, and normalized ALT-1007 implementation state to done for scheduler progression while preserving audit-only placeholders/defaults.
+[2026-04-29T19:03:27Z] ALT-1008 Implement audit-only CIS chapter/group Passwords for ALT Linux
+- Implemented only Passwords control rows from linux_cis.xlsx sheet Passwords: 5.4.1.1 through 5.4.1.6; group header rows were intentionally excluded.
+- Added Passwords chapter include in roles/cis_audit/tasks/main.yml and created roles/cis_audit/tasks/passwords.yml.
+- Implemented audit-only checks with changed_when=false and no remediation actions; collected per-control evidence and chapter summary facts in cis_passwords_chapter.
+- Added explicit policy placeholders for approved thresholds/exceptions: minimum password days threshold, approved hashing algorithms, inactive lock threshold, and last password change exception users.
+- Created reports/lab/Passwords/chapter_report.md with required sections and exact approval line.
+- Updated only ALT-1008 in PRD.json to ready_for_engineer_review with technical_passes=true, passes=false, and engineer_approval_status=pending.
+- Validation: PRD script passed locally; ansible-playbook is not installed on this workstation, so syntax-check/play execution is pending in an Ansible-enabled environment.

@@ -1032,16 +1032,18 @@
         "ALT-0005",
         "ALT-3007"
       ],
-      "status": "todo",
-      "technical_passes": false,
+      "status": "ready_for_engineer_review",
+      "technical_passes": true,
       "engineer_approval_required": true,
       "engineer_approval_status": "pending",
       "passes": false,
       "evidence_files": [
-
+        "roles/cis_audit/tasks/main.yml",
+        "roles/cis_audit/tasks/passwords.yml",
+        "reports/lab/Passwords/chapter_report.md"
       ],
-      "updated_at": "2026-04-27T21:26:35Z",
-      "comments": "Implement only controls present in linux_cis.xlsx sheet Passwords; detected 6 Ensure control rows and 2 group header rows. Stop at ready_for_engineer_review after chapter report."
+      "updated_at": "2026-04-29T19:03:27Z",
+      "comments": "Engineer implementation complete for audit-only Passwords controls in linux_cis.xlsx scope: 6 control rows implemented, group headers excluded, changed_when=false across tasks, no remediation actions. Added explicit policy placeholders for approved thresholds/exceptions (minimum days, hashing algorithms, inactive lock threshold, last-change exception users). Validation passed for PRD script; ansible-playbook is not installed on this workstation so syntax-check/play execution remains pending in an Ansible-enabled environment."
     },
     {
       "task_id": "ALT-2008",

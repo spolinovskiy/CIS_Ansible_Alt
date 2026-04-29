@@ -33,3 +33,8 @@
   ansible.builtin.include_tasks:
     file: file_permission.yml
   tags: [cis, audit, alt, file_permission, chapter_file_permission]
+
+- name: Audit | Passwords | Include chapter controls
+  ansible.builtin.include_tasks:
+    file: passwords.yml
+  tags: [cis, audit, alt, passwords, chapter_passwords]
