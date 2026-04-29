@@ -1,0 +1,184 @@
+---
+- name: Audit | Filesystem | Define placeholders and defaults
+  ansible.builtin.set_fact:
+    cis_fs_kernel_module_controls:
+      - { control_id: '1.1.1.1', module: 'cramfs', title: 'Ensure cramfs kernel module is not available' }
+      - { control_id: '1.1.1.2', module: 'freevxfs', title: 'Ensure freevxfs kernel module is not available' }
+      - { control_id: '1.1.1.3', module: 'hfs', title: 'Ensure hfs kernel module is not available' }
+      - { control_id: '1.1.1.4', module: 'hfsplus', title: 'Ensure hfsplus kernel module is not available' }
+      - { control_id: '1.1.1.5', module: 'jffs2', title: 'Ensure jffs2 kernel module is not available' }
+      - { control_id: '1.1.1.6', module: 'overlayfs', title: 'Ensure overlayfs kernel module is not available' }
+      - { control_id: '1.1.1.7', module: 'squashfs', title: 'Ensure squashfs kernel module is not available' }
+      - { control_id: '1.1.1.8', module: 'udf', title: 'Ensure udf kernel module is not available' }
+      - { control_id: '1.1.1.9', module: 'usb-storage', title: 'Ensure usb-storage kernel module is not available' }
+      - { control_id: '1.1.1.10', module: 'unused-filesystems-manual', title: 'Ensure unused filesystems kernel modules are not available (Manual)' }
+    cis_fs_partition_controls:
+      - { control_id: '1.1.2.1.1', mount: '/tmp', option: '', title: 'Ensure /tmp is a separate partition' }
+      - { control_id: '1.1.2.1.2', mount: '/tmp', option: 'nodev', title: 'Ensure nodev option set on /tmp partition' }
+      - { control_id: '1.1.2.1.3', mount: '/tmp', option: 'nosuid', title: 'Ensure nosuid option set on /tmp partition' }
+      - { control_id: '1.1.2.1.4', mount: '/tmp', option: 'noexec', title: 'Ensure noexec option set on /tmp partition' }
+      - { control_id: '1.1.2.2.1', mount: '/dev/shm', option: '', title: 'Ensure /dev/shm is a separate partition' }
+      - { control_id: '1.1.2.2.2', mount: '/dev/shm', option: 'nodev', title: 'Ensure nodev option set on /dev/shm partition' }
+      - { control_id: '1.1.2.2.3', mount: '/dev/shm', option: 'nosuid', title: 'Ensure nosuid option set on /dev/shm partition' }
+      - { control_id: '1.1.2.2.4', mount: '/dev/shm', option: 'noexec', title: 'Ensure noexec option set on /dev/shm partition' }
+      - { control_id: '1.1.2.3.1', mount: '/home', option: '', title: 'Ensure separate partition exists for /home' }
+      - { control_id: '1.1.2.3.2', mount: '/home', option: 'nodev', title: 'Ensure nodev option set on /home partition' }
+      - { control_id: '1.1.2.3.3', mount: '/home', option: 'nosuid', title: 'Ensure nosuid option set on /home partition' }
+      - { control_id: '1.1.2.4.1', mount: '/var', option: '', title: 'Ensure separate partition exists for /var' }
+      - { control_id: '1.1.2.4.2', mount: '/var', option: 'nodev', title: 'Ensure nodev option set on /var partition' }
+      - { control_id: '1.1.2.4.3', mount: '/var', option: 'nosuid', title: 'Ensure nosuid option set on /var partition' }
+      - { control_id: '1.1.2.5.1', mount: '/var/tmp', option: '', title: 'Ensure separate partition exists for /var/tmp' }
+      - { control_id: '1.1.2.5.2', mount: '/var/tmp', option: 'nodev', title: 'Ensure nodev option set on /var/tmp partition' }
+      - { control_id: '1.1.2.5.3', mount: '/var/tmp', option: 'nosuid', title: 'Ensure nosuid option set on /var/tmp partition' }
+      - { control_id: '1.1.2.5.4', mount: '/var/tmp', option: 'noexec', title: 'Ensure noexec option set on /var/tmp partition' }
+      - { control_id: '1.1.2.6.1', mount: '/var/log', option: '', title: 'Ensure separate partition exists for /var/log' }
+      - { control_id: '1.1.2.6.2', mount: '/var/log', option: 'nodev', title: 'Ensure nodev option set on /var/log partition' }
+      - { control_id: '1.1.2.6.3', mount: '/var/log', option: 'nosuid', title: 'Ensure nosuid option set on /var/log partition' }
+      - { control_id: '1.1.2.6.4', mount: '/var/log', option: 'noexec', title: 'Ensure noexec option set on /var/log partition' }
+      - { control_id: '1.1.2.7.1', mount: '/var/log/audit', option: '', title: 'Ensure separate partition exists for /var/log/audit' }
+      - { control_id: '1.1.2.7.2', mount: '/var/log/audit', option: 'nodev', title: 'Ensure nodev option set on /var/log/audit partition' }
+      - { control_id: '1.1.2.7.3', mount: '/var/log/audit', option: 'nosuid', title: 'Ensure nosuid option set on /var/log/audit partition' }
+      - { control_id: '1.1.2.7.4', mount: '/var/log/audit', option: 'noexec', title: 'Ensure noexec option set on /var/log/audit partition' }
+    cis_fs_missing_information_placeholders:
+      - "MISSING_OT_BASELINE:approved_unused_filesystem_kernel_module_allowlist"
+      - "MISSING_OT_BASELINE:approved_mountpoint_exceptions"
+      - "MISSING_OT_BASELINE:approved_mount_option_exceptions"
+  changed_when: false
+  tags: [cis, audit, alt, filesystem, chapter_filesystem]
+
+- name: Audit | Filesystem | 1.1.1.x collect module state and modprobe policy
+  ansible.builtin.shell: |
+    modprobe_out="$(modprobe -n -v {{ item.module }} 2>/dev/null || true)"
+    lsmod_match="$(lsmod | awk 'NR>1 {print $1}' | grep -E '^{{ item.module | regex_escape }}$' || true)"
+    printf 'module=%s\nmodprobe=%s\nloaded=%s\n' '{{ item.module }}' "$modprobe_out" "$lsmod_match"
+  loop: "{{ cis_fs_kernel_module_controls | rejectattr('control_id', 'equalto', '1.1.1.10') | list }}"
+  loop_control:
+    label: "{{ item.control_id }}"
+  register: cis_fs_module_evidence
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_1_1_1, audit, alt, filesystem, chapter_filesystem]
+
+- name: Audit | Filesystem | 1.1.1.10 collect loaded filesystem modules snapshot
+  ansible.builtin.shell: "awk '/nodev/ {print $2}' /proc/filesystems 2>/dev/null"
+  register: cis_1_1_1_10_unused_fs_manual
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_1_1_1_10, audit, alt, filesystem, chapter_filesystem]
+
+- name: Audit | Filesystem | 1.1.2.x collect mounted filesystems
+  ansible.builtin.command: "findmnt -J -o TARGET,SOURCE,FSTYPE,OPTIONS"
+  register: cis_fs_findmnt
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_1_1_2, audit, alt, filesystem, chapter_filesystem]
+
+- name: Audit | Filesystem | Build chapter summary facts
+  ansible.builtin.set_fact:
+    cis_filesystem_chapter:
+      chapter: "Filesystem"
+      sheet: "Filesystem"
+      implemented_controls:
+        - "1.1.1.1"
+        - "1.1.1.2"
+        - "1.1.1.3"
+        - "1.1.1.4"
+        - "1.1.1.5"
+        - "1.1.1.6"
+        - "1.1.1.7"
+        - "1.1.1.8"
+        - "1.1.1.9"
+        - "1.1.1.10"
+        - "1.1.2.1.1"
+        - "1.1.2.1.2"
+        - "1.1.2.1.3"
+        - "1.1.2.1.4"
+        - "1.1.2.2.1"
+        - "1.1.2.2.2"
+        - "1.1.2.2.3"
+        - "1.1.2.2.4"
+        - "1.1.2.3.1"
+        - "1.1.2.3.2"
+        - "1.1.2.3.3"
+        - "1.1.2.4.1"
+        - "1.1.2.4.2"
+        - "1.1.2.4.3"
+        - "1.1.2.5.1"
+        - "1.1.2.5.2"
+        - "1.1.2.5.3"
+        - "1.1.2.5.4"
+        - "1.1.2.6.1"
+        - "1.1.2.6.2"
+        - "1.1.2.6.3"
+        - "1.1.2.6.4"
+        - "1.1.2.7.1"
+        - "1.1.2.7.2"
+        - "1.1.2.7.3"
+        - "1.1.2.7.4"
+      skipped_controls: []
+      manual_controls:
+        - "1.1.1.10"
+      blocked_controls: []
+      high_risk_controls:
+        - "1.1.1.1"
+        - "1.1.1.2"
+        - "1.1.1.3"
+        - "1.1.1.4"
+        - "1.1.1.5"
+        - "1.1.1.6"
+        - "1.1.1.7"
+        - "1.1.1.8"
+        - "1.1.1.9"
+      missing_information_placeholders: "{{ cis_fs_missing_information_placeholders }}"
+      offline_assumptions:
+        - "Audit-only tasks use local command and local file reads only; no Internet access is required."
+        - "No kernel module blacklist/install policy, mount options, partitioning, or remount operations are executed."
+      os_tested:
+        distribution: "{{ ansible_distribution | default('unknown') }}"
+        version: "{{ ansible_distribution_version | default('unknown') }}"
+        kernel: "{{ ansible_kernel | default('unknown') }}"
+      commands:
+        - "modprobe -n -v <module>"
+        - "lsmod"
+        - "awk /proc/filesystems"
+        - "findmnt -J -o TARGET,SOURCE,FSTYPE,OPTIONS"
+      evidence_records:
+        module_controls: "{{ cis_fs_module_evidence.results | default([]) }}"
+        manual_unused_filesystem_modules:
+          register: "cis_1_1_1_10_unused_fs_manual"
+          findings: "{{ cis_1_1_1_10_unused_fs_manual.stdout_lines | default([]) }}"
+          placeholders:
+            - "MISSING_OT_BASELINE:approved_unused_filesystem_kernel_module_allowlist"
+        mount_inventory:
+          register: "cis_fs_findmnt"
+          raw_json: "{{ cis_fs_findmnt.stdout | default('') }}"
+      result_summary: "{{ cis_fs_result_summary }}"
+  vars:
+    cis_fs_mounts: "{{ (cis_fs_findmnt.stdout | default('{\"filesystems\": []}') | from_json).filesystems if cis_fs_findmnt.rc == 0 else [] }}"
+    cis_fs_result_summary: "{{ cis_fs_kernel_results + cis_fs_partition_results }}"
+    cis_fs_kernel_results: |
+      {%- set out = [] -%}
+      {%- for c in cis_fs_kernel_module_controls if c.control_id != '1.1.1.10' -%}
+      {%- set rec = (cis_fs_module_evidence.results | default([]) | selectattr('item.control_id','equalto',c.control_id) | list | first | default({})) -%}
+      {%- set text = rec.stdout | default('') -%}
+      {%- set has_policy = ('install /bin/true' in text) or ('install /bin/false' in text) or ('Module ' in text and 'not found' in text) -%}
+      {%- set loaded = (text is search('loaded=.+')) and not (text is search('loaded=$')) -%}
+      {%- set status = 'pass' if (has_policy and not loaded) else ('blocked' if (rec.rc is defined and rec.rc not in [0]) else 'fail') -%}
+      {%- set _ = out.append({'control_id': c.control_id, 'title': c.title, 'status': status}) -%}
+      {%- endfor -%}
+      {{ out }}
+    cis_fs_partition_results: |
+      {%- set out = [] -%}
+      {%- for c in cis_fs_partition_controls -%}
+      {%- set m = (cis_fs_mounts | selectattr('target','equalto',c.mount) | list | first | default({})) -%}
+      {%- set options = (m.options | default('') | string).split(',') if (m | length) > 0 else [] -%}
+      {%- if c.option == '' -%}
+      {%- set status = 'pass' if (m | length) > 0 else 'fail' -%}
+      {%- else -%}
+      {%- set status = 'pass' if ((m | length) > 0 and (c.option in options)) else 'fail' -%}
+      {%- endif -%}
+      {%- set _ = out.append({'control_id': c.control_id, 'title': c.title, 'status': status}) -%}
+      {%- endfor -%}
+      {{ out }}
+  changed_when: false
+  tags: [cis, audit, alt, filesystem, chapter_filesystem]

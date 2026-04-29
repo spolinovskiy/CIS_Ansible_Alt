@@ -1256,14 +1256,20 @@
         "ALT-0005",
         "ALT-3010"
       ],
-      "status": "todo",
-      "technical_passes": false,
+      "status": "ready_for_engineer_review",
+      "technical_passes": true,
       "engineer_approval_required": true,
       "engineer_approval_status": "pending",
       "passes": false,
-      "evidence_files": [],
-      "updated_at": "2026-04-27T21:26:35Z",
-      "comments": "Implement only controls present in linux_cis.xlsx sheet Filesystem; detected 36 Ensure control rows and 10 group header rows. Stop at ready_for_engineer_review after chapter report."
+      "evidence_files": [
+        "roles/cis_audit/tasks/main.yml",
+        "roles/cis_audit/tasks/filesystem.yml",
+        "reports/lab/Filesystem/chapter_report.md",
+        "PRD.json",
+        "progress.txt"
+      ],
+      "updated_at": "2026-04-29T19:39:44Z",
+      "comments": "Implemented audit-only Filesystem controls from linux_cis.xlsx sheet Filesystem (36 control rows), excluding 10 group headers; added read-only evidence collection with changed_when=false and no remediation/restart actions; kept explicit OT baseline placeholders for module allowlists and partition/mount-option exceptions; validation via scripts/validate_prd.sh executed locally."
     },
     {
       "task_id": "ALT-2011",

@@ -48,3 +48,8 @@
   ansible.builtin.include_tasks:
     file: process_hardening.yml
   tags: [cis, audit, alt, process_hardening, chapter_process_hardening]
+
+- name: Audit | Filesystem | Include chapter controls
+  ansible.builtin.include_tasks:
+    file: filesystem.yml
+  tags: [cis, audit, alt, filesystem, chapter_filesystem]
