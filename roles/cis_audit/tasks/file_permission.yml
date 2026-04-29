@@ -1,0 +1,187 @@
+---
+- name: Audit | FilePermission | Define placeholders and defaults
+  ansible.builtin.set_fact:
+    cis_fp_approved_world_writable_exceptions: "{{ cis_fp_approved_world_writable_exceptions | default([]) }}"
+    cis_fp_approved_unowned_exceptions: "{{ cis_fp_approved_unowned_exceptions | default([]) }}"
+    cis_fp_approved_suid_sgid_baseline: "{{ cis_fp_approved_suid_sgid_baseline | default([]) }}"
+    cis_fp_missing_information_placeholders:
+      - "MISSING_OT_BASELINE:approved_world_writable_exceptions"
+      - "MISSING_OT_BASELINE:approved_unowned_or_ungrouped_exceptions"
+      - "MISSING_OT_BASELINE:approved_suid_sgid_baseline"
+  changed_when: false
+  tags: [cis, audit, alt, file_permission, chapter_file_permission]
+
+- name: Audit | FilePermission | 7.1.1-7.1.10 | Stat core files
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+  loop:
+    - { id: '7.1.1', title: 'Ensure permissions on /etc/passwd are configured', path: '/etc/passwd', mode_regex: '^0?644$' }
+    - { id: '7.1.2', title: 'Ensure permissions on /etc/passwd- are configured', path: '/etc/passwd-', mode_regex: '^0?644$' }
+    - { id: '7.1.3', title: 'Ensure permissions on /etc/group are configured', path: '/etc/group', mode_regex: '^0?644$' }
+    - { id: '7.1.4', title: 'Ensure permissions on /etc/group- are configured', path: '/etc/group-', mode_regex: '^0?644$' }
+    - { id: '7.1.5', title: 'Ensure permissions on /etc/shadow are configured', path: '/etc/shadow', mode_regex: '^0?(000|400|600|640)$' }
+    - { id: '7.1.6', title: 'Ensure permissions on /etc/shadow- are configured', path: '/etc/shadow-', mode_regex: '^0?(000|400|600|640)$' }
+    - { id: '7.1.7', title: 'Ensure permissions on /etc/gshadow are configured', path: '/etc/gshadow', mode_regex: '^0?(000|400|600|640)$' }
+    - { id: '7.1.8', title: 'Ensure permissions on /etc/gshadow- are configured', path: '/etc/gshadow-', mode_regex: '^0?(000|400|600|640)$' }
+    - { id: '7.1.9', title: 'Ensure permissions on /etc/shells are configured', path: '/etc/shells', mode_regex: '^0?644$' }
+    - { id: '7.1.10', title: 'Ensure permissions on /etc/security/opasswd are configured', path: '/etc/security/opasswd', mode_regex: '^0?600$' }
+  register: cis_fp_core_file_stats
+  changed_when: false
+  tags: [cis, audit, alt, file_permission, chapter_file_permission]
+
+- name: Audit | FilePermission | 7.1.11 | List world-writable files and directories
+  ansible.builtin.shell: "find / -xdev \\( -path /proc -o -path /sys -o -path /run -o -path /dev -o -path /snap \\) -prune -o \\( -type f -perm -0002 -o -type d -perm -0002 \\) -print"
+  register: cis_7_1_11_world_writable
+  failed_when: false
+  changed_when: false
+  tags: [cis, cis_7_1_11, audit, alt, file_permission, chapter_file_permission]
+
+- name: Audit | FilePermission | 7.1.12 | List unowned or ungrouped files and directories
+  ansible.builtin.shell: "find / -xdev \\( -path /proc -o -path /sys -o -path /run -o -path /dev -o -path /snap \\) -prune -o \\( -nouser -o -nogroup \\) -print"
+  register: cis_7_1_12_unowned_ungrouped
+  failed_when: false
+  changed_when: false
+  tags: [cis, cis_7_1_12, audit, alt, file_permission, chapter_file_permission]
+
+- name: Audit | FilePermission | 7.1.13 | List SUID and SGID files
+  ansible.builtin.shell: "find / -xdev -type f \\( -perm -4000 -o -perm -2000 \\) -print"
+  register: cis_7_1_13_suid_sgid
+  failed_when: false
+  changed_when: false
+  tags: [cis, cis_7_1_13, audit, alt, file_permission, chapter_file_permission]
+
+- name: Audit | FilePermission | Build core file result map
+  ansible.builtin.set_fact:
+    cis_fp_core_result_map: >-
+      {{
+        (cis_fp_core_result_map | default({}))
+        | combine({
+            item.item.id: {
+              'control_id': item.item.id,
+              'title': item.item.title,
+              'status': (
+                'pass' if (
+                  (item.stat.exists | default(false))
+                  and (item.stat.pw_name | default('')) == 'root'
+                  and (item.stat.gr_name | default('')) == 'root'
+                  and ((item.stat.mode | default('')) is match(item.item.mode_regex))
+                ) else 'fail'
+              ),
+              'evidence': {
+                'path': item.item.path,
+                'exists': (item.stat.exists | default(false)),
+                'owner': (item.stat.pw_name | default('unknown')),
+                'group': (item.stat.gr_name | default('unknown')),
+                'mode': (item.stat.mode | default('unknown')),
+                'expected_owner': 'root',
+                'expected_group': 'root',
+                'expected_mode_regex': item.item.mode_regex
+              }
+            }
+          }, recursive=True)
+      }}
+  loop: "{{ cis_fp_core_file_stats.results | default([]) }}"
+  changed_when: false
+  tags: [cis, audit, alt, file_permission, chapter_file_permission]
+
+- name: Audit | FilePermission | Build chapter summary facts
+  ansible.builtin.set_fact:
+    cis_file_permission_chapter:
+      chapter: "FilePermission"
+      sheet: "FilePermission"
+      implemented_controls:
+        - "7.1.1"
+        - "7.1.2"
+        - "7.1.3"
+        - "7.1.4"
+        - "7.1.5"
+        - "7.1.6"
+        - "7.1.7"
+        - "7.1.8"
+        - "7.1.9"
+        - "7.1.10"
+        - "7.1.11"
+        - "7.1.12"
+        - "7.1.13"
+      skipped_controls: []
+      manual_controls:
+        - "7.1.13"
+      blocked_controls: []
+      high_risk_controls:
+        - "7.1.1"
+        - "7.1.2"
+        - "7.1.3"
+        - "7.1.4"
+        - "7.1.5"
+        - "7.1.6"
+        - "7.1.7"
+        - "7.1.8"
+        - "7.1.9"
+        - "7.1.10"
+        - "7.1.11"
+        - "7.1.12"
+        - "7.1.13"
+      missing_information_placeholders: "{{ cis_fp_missing_information_placeholders }}"
+      offline_assumptions:
+        - "Audit-only tasks use local file metadata and find scans only; no Internet access is required."
+        - "No chmod/chown/chgrp, file deletion, or mount/remediation actions are performed."
+      os_tested:
+        distribution: "{{ ansible_distribution | default('unknown') }}"
+        version: "{{ ansible_distribution_version | default('unknown') }}"
+        kernel: "{{ ansible_kernel | default('unknown') }}"
+      commands:
+        - "stat on /etc/passwd,/etc/passwd-,/etc/group,/etc/group-,/etc/shadow,/etc/shadow-,/etc/gshadow,/etc/gshadow-,/etc/shells,/etc/security/opasswd"
+        - "find / -xdev ... world-writable"
+        - "find / -xdev ... -nouser/-nogroup"
+        - "find / -xdev -perm -4000/-2000"
+      evidence_records:
+        "7.1.1": "{{ cis_fp_core_result_map['7.1.1'].evidence }}"
+        "7.1.2": "{{ cis_fp_core_result_map['7.1.2'].evidence }}"
+        "7.1.3": "{{ cis_fp_core_result_map['7.1.3'].evidence }}"
+        "7.1.4": "{{ cis_fp_core_result_map['7.1.4'].evidence }}"
+        "7.1.5": "{{ cis_fp_core_result_map['7.1.5'].evidence }}"
+        "7.1.6": "{{ cis_fp_core_result_map['7.1.6'].evidence }}"
+        "7.1.7": "{{ cis_fp_core_result_map['7.1.7'].evidence }}"
+        "7.1.8": "{{ cis_fp_core_result_map['7.1.8'].evidence }}"
+        "7.1.9": "{{ cis_fp_core_result_map['7.1.9'].evidence }}"
+        "7.1.10": "{{ cis_fp_core_result_map['7.1.10'].evidence }}"
+        "7.1.11":
+          register: "cis_7_1_11_world_writable"
+          findings: "{{ cis_7_1_11_world_writable.stdout_lines | default([]) }}"
+          placeholders:
+            - "MISSING_OT_BASELINE:approved_world_writable_exceptions"
+        "7.1.12":
+          register: "cis_7_1_12_unowned_ungrouped"
+          findings: "{{ cis_7_1_12_unowned_ungrouped.stdout_lines | default([]) }}"
+          placeholders:
+            - "MISSING_OT_BASELINE:approved_unowned_or_ungrouped_exceptions"
+        "7.1.13":
+          register: "cis_7_1_13_suid_sgid"
+          findings: "{{ cis_7_1_13_suid_sgid.stdout_lines | default([]) }}"
+          placeholders:
+            - "MISSING_OT_BASELINE:approved_suid_sgid_baseline"
+      result_summary:
+        - "{{ cis_fp_core_result_map['7.1.1'] }}"
+        - "{{ cis_fp_core_result_map['7.1.2'] }}"
+        - "{{ cis_fp_core_result_map['7.1.3'] }}"
+        - "{{ cis_fp_core_result_map['7.1.4'] }}"
+        - "{{ cis_fp_core_result_map['7.1.5'] }}"
+        - "{{ cis_fp_core_result_map['7.1.6'] }}"
+        - "{{ cis_fp_core_result_map['7.1.7'] }}"
+        - "{{ cis_fp_core_result_map['7.1.8'] }}"
+        - "{{ cis_fp_core_result_map['7.1.9'] }}"
+        - "{{ cis_fp_core_result_map['7.1.10'] }}"
+        -
+          control_id: "7.1.11"
+          title: "Ensure world writable files and directories are secured"
+          status: "{{ 'manual_review_required' if (cis_fp_approved_world_writable_exceptions | length) == 0 else ('pass' if ((cis_7_1_11_world_writable.stdout_lines | default([]) | difference(cis_fp_approved_world_writable_exceptions)) | length) == 0 else 'fail') }}"
+        -
+          control_id: "7.1.12"
+          title: "Ensure no files or directories without an owner and a group exist"
+          status: "{{ 'manual_review_required' if (cis_fp_approved_unowned_exceptions | length) == 0 else ('pass' if ((cis_7_1_12_unowned_ungrouped.stdout_lines | default([]) | difference(cis_fp_approved_unowned_exceptions)) | length) == 0 else 'fail') }}"
+        -
+          control_id: "7.1.13"
+          title: "Ensure SUID and SGID files are reviewed (Manual)"
+          status: "manual_review_required"
+  changed_when: false
+  tags: [cis, audit, alt, file_permission, chapter_file_permission]

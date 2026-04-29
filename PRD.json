@@ -953,16 +953,18 @@
         "ALT-0005",
         "ALT-3006"
       ],
-      "status": "todo",
-      "technical_passes": false,
+      "status": "ready_for_engineer_review",
+      "technical_passes": true,
       "engineer_approval_required": true,
       "engineer_approval_status": "pending",
       "passes": false,
       "evidence_files": [
-
+        "roles/cis_audit/tasks/main.yml",
+        "roles/cis_audit/tasks/file_permission.yml",
+        "reports/lab/FilePermission/chapter_report.md"
       ],
-      "updated_at": "2026-04-27T21:26:35Z",
-      "comments": "Implement only controls present in linux_cis.xlsx sheet FilePermission; detected 13 Ensure control rows and 1 group header rows. Stop at ready_for_engineer_review after chapter report."
+      "updated_at": "2026-04-29T18:49:17Z",
+      "comments": "Engineer implementation complete for audit-only FilePermission controls in linux_cis.xlsx scope: 13 control rows implemented, group header excluded, changed_when=false across tasks, no remediation actions. Added explicit policy placeholders for approved world-writable, unowned/ungrouped, and SUID/SGID exception baselines. Validation passed for PRD script; ansible-playbook is not installed on this workstation so syntax-check/play execution remains pending in an Ansible-enabled environment."
     },
     {
       "task_id": "ALT-2007",

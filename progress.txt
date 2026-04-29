@@ -180,3 +180,11 @@
 - Validation: PRD script passed locally; ansible-playbook is not installed on this workstation, so syntax-check/play execution is pending in an Ansible-enabled environment.
 2026-04-29T10:10:00Z PRD scheduler normalization + private overlay model: marked approved implementation tasks as done to align with completed engineer-approval gates (ALT-1003/1004/1005 and ALT-3003), and implemented universal sensitive-data approach with gitignored private overlays, optional vault-ready file loading in cis_common, and documented strategy/templates for non-GitHub OT data.
 2026-04-29T10:20:00Z Local Users and Groups chapter workflow closure: added ALT-2006 review artifact, recorded ALT-3006 engineer approval state, and normalized ALT-1006 implementation state to done for scheduler progression while preserving audit-only placeholders/defaults.
+[2026-04-29T18:49:17Z] ALT-1007 Implement audit-only CIS chapter/group FilePermission for ALT Linux
+- Implemented only FilePermission control rows from linux_cis.xlsx sheet FilePermission: 7.1.1 through 7.1.13; group header rows were intentionally excluded.
+- Added FilePermission chapter include in roles/cis_audit/tasks/main.yml and created roles/cis_audit/tasks/file_permission.yml.
+- Implemented audit-only checks with changed_when=false and no remediation actions; collected per-control evidence and chapter summary facts in cis_file_permission_chapter.
+- Added explicit policy placeholders for approved baseline exceptions: world-writable paths, unowned/ungrouped paths, and SUID/SGID baseline review.
+- Created reports/lab/FilePermission/chapter_report.md with required sections and exact approval line.
+- Updated only ALT-1007 in PRD.json to ready_for_engineer_review with technical_passes=true, passes=false, and engineer_approval_status=pending.
+- Validation: PRD script passed locally; ansible-playbook is not installed on this workstation, so syntax-check/play execution is pending in an Ansible-enabled environment.

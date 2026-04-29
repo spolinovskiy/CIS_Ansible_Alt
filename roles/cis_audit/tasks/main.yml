@@ -28,3 +28,8 @@
   ansible.builtin.include_tasks:
     file: local_users_groups.yml
   tags: [cis, audit, alt, local_users_groups, chapter_local_users_groups]
+
+- name: Audit | FilePermission | Include chapter controls
+  ansible.builtin.include_tasks:
+    file: file_permission.yml
+  tags: [cis, audit, alt, file_permission, chapter_file_permission]
