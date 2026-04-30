@@ -70,6 +70,11 @@
     file: logging.yml
   tags: [cis, audit, alt, logging, chapter_logging]
 
+- name: Audit | SERVICES | Include chapter controls
+  ansible.builtin.include_tasks:
+    file: services.yml
+  tags: [cis, audit, alt, services, chapter_services]
+
 - name: Audit | Network Kernel Modules | Include chapter controls
   ansible.builtin.include_tasks:
     file: network_kernel_modules.yml

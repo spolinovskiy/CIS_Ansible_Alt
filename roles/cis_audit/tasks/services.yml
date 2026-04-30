@@ -1,0 +1,161 @@
+---
+- name: Audit | SERVICES | Define control mappings and placeholders
+  ansible.builtin.set_fact:
+    cis_services_controls:
+      - { control_id: "2.1.1", title: "Ensure autofs services are not in use", command: "systemctl is-enabled autofs.service 2>/dev/null | grep 'enabled'", manual: false, expect_absent_enabled: true }
+      - { control_id: "2.1.2", title: "Ensure avahi daemon services are not in use", command: "systemctl is-enabled avahi-daemon.socket avahi-daemon.service 2>/dev/null | grep 'enabled'", manual: false, expect_absent_enabled: true }
+      - { control_id: "2.1.3", title: "Ensure dhcp server services are not in use", command: "systemctl is-enabled isc-dhcp-server.service isc-dhcp-server6.service 2>/dev/null | grep 'enabled'", manual: false, expect_absent_enabled: true }
+      - { control_id: "2.1.4", title: "Ensure dns server services are not in use", command: "systemctl is-enabled named.service 2>/dev/null | grep 'enabled'", manual: false, expect_absent_enabled: true }
+      - { control_id: "2.1.5", title: "Ensure dnsmasq services are not in use", command: "systemctl is-enabled dnsmasq.service 2>/dev/null | grep 'enabled'", manual: false, expect_absent_enabled: true }
+      - { control_id: "2.1.6", title: "Ensure ftp server services are not in use", command: "systemctl is-enabled vsftpd.service 2>/dev/null | grep 'enabled'", manual: false, expect_absent_enabled: true }
+      - { control_id: "2.1.7", title: "Ensure ldap server services are not in use", command: "systemctl is-enabled slapd.service 2>/dev/null | grep 'enabled'", manual: false, expect_absent_enabled: true }
+      - { control_id: "2.1.8", title: "Ensure message access server services are not in use", command: "systemctl is-enabled dovecot.socket dovecot.service 2>/dev/null | grep 'enabled'", manual: false, expect_absent_enabled: true }
+      - { control_id: "2.1.9", title: "Ensure network file system services are not in use", command: "systemctl is-enabled nfs-server.service 2>/dev/null | grep 'enabled'", manual: false, expect_absent_enabled: true }
+      - { control_id: "2.1.10", title: "Ensure nis server services are not in use", command: "systemctl is-enabled ypserv.service 2>/dev/null | grep 'enabled'", manual: false, expect_absent_enabled: true }
+      - { control_id: "2.1.11", title: "Ensure print server services are not in use", command: "systemctl is-enabled cups.socket cups.service 2>/dev/null | grep 'enabled'", manual: false, expect_absent_enabled: true }
+      - { control_id: "2.1.12", title: "Ensure rpcbind services are not in use", command: "systemctl is-enabled rpcbind.socket rpcbind.service 2>/dev/null | grep 'enabled'", manual: false, expect_absent_enabled: true }
+      - { control_id: "2.1.13", title: "Ensure rsync services are not in use", command: "systemctl is-enabled rsync.service 2>/dev/null | grep 'enabled'", manual: false, expect_absent_enabled: true }
+      - { control_id: "2.1.14", title: "Ensure samba file server services are not in use", command: "systemctl is-enabled smbd.service 2>/dev/null | grep 'enabled'", manual: false, expect_absent_enabled: true }
+      - { control_id: "2.1.15", title: "Ensure snmp services are not in use", command: "systemctl is-enabled snmpd.service 2>/dev/null | grep 'enabled'", manual: false, expect_absent_enabled: true }
+      - { control_id: "2.1.16", title: "Ensure tftp server services are not in use", command: "systemctl is-enabled tftpd-hpa.service 2>/dev/null | grep 'enabled'", manual: false, expect_absent_enabled: true }
+      - { control_id: "2.1.17", title: "Ensure web proxy server services are not in use", command: "systemctl is-enabled squid.service 2>/dev/null | grep 'enabled'", manual: false, expect_absent_enabled: true }
+      - { control_id: "2.1.18", title: "Ensure web server services are not in use", command: "systemctl is-enabled apache2.socket apache2.service nginx.service 2>/dev/null | grep 'enabled'", manual: false, expect_absent_enabled: true }
+      - { control_id: "2.1.19", title: "Ensure xinetd services are not in use", command: "systemctl is-enabled xinetd.service 2>/dev/null | grep 'enabled'", manual: false, expect_absent_enabled: true }
+      - { control_id: "2.1.20", title: "Ensure X window server services are not in use", command: "rpm -q xorg-server 2>/dev/null", manual: true, expect_absent_enabled: false }
+      - { control_id: "2.1.21", title: "Ensure mail transfer agent is configured for local-only mode", command: "ss -plntu | awk 'NR==1 || /:25\\s/'", manual: true, expect_absent_enabled: false }
+      - { control_id: "2.1.22", title: "Ensure only approved services are listening on a network interface (Manual)", command: "ss -plntu", manual: true, expect_absent_enabled: false }
+      - { control_id: "2.2.1", title: "Ensure NIS Client is not installed", command: "rpm -q ypbind 2>/dev/null", manual: true, expect_absent_enabled: false }
+      - { control_id: "2.2.2", title: "Ensure rsh client is not installed", command: "rpm -q rsh 2>/dev/null", manual: true, expect_absent_enabled: false }
+      - { control_id: "2.2.3", title: "Ensure talk client is not installed", command: "rpm -q talk 2>/dev/null", manual: true, expect_absent_enabled: false }
+      - { control_id: "2.2.4", title: "Ensure telnet client is not installed", command: "rpm -q telnet 2>/dev/null", manual: true, expect_absent_enabled: false }
+      - { control_id: "2.2.5", title: "Ensure ldap client is not installed", command: "rpm -q openldap-clients 2>/dev/null", manual: true, expect_absent_enabled: false }
+      - { control_id: "2.2.6", title: "Ensure ftp client is not installed", command: "rpm -q ftp 2>/dev/null", manual: true, expect_absent_enabled: false }
+    cis_services_missing_information_placeholders:
+      - "MISSING_OT_BASELINE:approved_service_allowlist"
+      - "MISSING_OT_BASELINE:approved_listening_services_and_ports"
+      - "MISSING_OT_BASELINE:approved_mta_local_only_policy"
+      - "MISSING_OT_BASELINE:approved_client_package_exceptions"
+  changed_when: false
+  tags: [cis, audit, alt, services, chapter_services]
+
+- name: Audit | SERVICES | Collect per-control evidence commands
+  ansible.builtin.shell: "{{ item.command }}"
+  loop: "{{ cis_services_controls }}"
+  loop_control:
+    label: "{{ item.control_id }}"
+  register: cis_services_control_evidence
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_2_1, cis_2_2, audit, alt, services, chapter_services]
+
+- name: Audit | SERVICES | Build chapter summary facts
+  ansible.builtin.set_fact:
+    cis_services_chapter:
+      chapter: "SERVICES"
+      sheet: "SERVICES"
+      implemented_controls:
+        - "2.1.1"
+        - "2.1.2"
+        - "2.1.3"
+        - "2.1.4"
+        - "2.1.5"
+        - "2.1.6"
+        - "2.1.7"
+        - "2.1.8"
+        - "2.1.9"
+        - "2.1.10"
+        - "2.1.11"
+        - "2.1.12"
+        - "2.1.13"
+        - "2.1.14"
+        - "2.1.15"
+        - "2.1.16"
+        - "2.1.17"
+        - "2.1.18"
+        - "2.1.19"
+        - "2.1.20"
+        - "2.1.21"
+        - "2.1.22"
+        - "2.2.1"
+        - "2.2.2"
+        - "2.2.3"
+        - "2.2.4"
+        - "2.2.5"
+        - "2.2.6"
+      skipped_controls: []
+      manual_controls:
+        - "2.1.20"
+        - "2.1.21"
+        - "2.1.22"
+        - "2.2.1"
+        - "2.2.2"
+        - "2.2.3"
+        - "2.2.4"
+        - "2.2.5"
+        - "2.2.6"
+      blocked_controls: "{{ cis_services_result_summary | selectattr('status', 'equalto', 'blocked') | map(attribute='control_id') | list }}"
+      high_risk_controls:
+        - "2.1.1"
+        - "2.1.2"
+        - "2.1.3"
+        - "2.1.4"
+        - "2.1.5"
+        - "2.1.6"
+        - "2.1.7"
+        - "2.1.8"
+        - "2.1.9"
+        - "2.1.10"
+        - "2.1.11"
+        - "2.1.12"
+        - "2.1.13"
+        - "2.1.14"
+        - "2.1.15"
+        - "2.1.16"
+        - "2.1.17"
+        - "2.1.18"
+        - "2.1.19"
+        - "2.1.20"
+        - "2.1.21"
+        - "2.1.22"
+        - "2.2.1"
+        - "2.2.2"
+        - "2.2.3"
+        - "2.2.4"
+        - "2.2.5"
+        - "2.2.6"
+      missing_information_placeholders: "{{ cis_services_missing_information_placeholders }}"
+      offline_assumptions:
+        - "Audit-only tasks use local systemctl/rpm/ss reads only; no Internet access is required."
+        - "No remediation, service stop/disable, restart, reload, or reboot operations are executed."
+      os_tested:
+        distribution: "{{ ansible_distribution | default('unknown') }}"
+        version: "{{ ansible_distribution_version | default('unknown') }}"
+        kernel: "{{ ansible_kernel | default('unknown') }}"
+      commands: "{{ cis_services_controls | map(attribute='command') | list | unique }}"
+      evidence_records:
+        control_checks: "{{ cis_services_control_evidence.results | default([]) }}"
+      result_summary: "{{ cis_services_result_summary }}"
+  vars:
+    cis_services_result_summary: |
+      {%- set out = [] -%}
+      {%- for c in cis_services_controls -%}
+      {%- set rec = (cis_services_control_evidence.results | default([]) | selectattr('item.control_id','equalto',c.control_id) | list | first | default({})) -%}
+      {%- set rc = rec.rc if (rec.rc is defined) else 999 -%}
+      {%- if c.manual -%}
+      {%- set status = 'blocked' if rc == 127 else 'manual_review_required' -%}
+      {%- elif c.expect_absent_enabled -%}
+      {%- if rc == 0 and ((rec.stdout | default('')) is search('enabled')) -%}
+      {%- set status = 'fail' -%}
+      {%- elif rc in [0,1] -%}
+      {%- set status = 'pass' -%}
+      {%- else -%}
+      {%- set status = 'blocked' -%}
+      {%- endif -%}
+      {%- else -%}
+      {%- set status = 'blocked' if rc not in [0,1] else 'manual_review_required' -%}
+      {%- endif -%}
+      {%- set _ = out.append({'control_id': c.control_id, 'title': c.title, 'status': status}) -%}
+      {%- endfor -%}
+      {{ out }}
+  changed_when: false
+  tags: [cis, audit, alt, services, chapter_services]

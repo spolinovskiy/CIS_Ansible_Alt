@@ -6,7 +6,7 @@
   "context_file": "../Refference_docs/AGENTS_CONTEXT_CIS_ANSIBLE_OT.md",
   "methodology_file": "../Refference_docs/текст.txt",
   "created_at": "2026-04-27T21:26:35Z",
-  "updated_at": "2026-04-28T16:48:33Z",
+  "updated_at": "2026-04-30T10:30:00Z",
   "task_selection_rule": "lowest priority task with passes=false and all dependencies passes=true",
   "completion_rule": "passes=true only when technical_passes=true and engineer_approval_status is approved or not_required",
   "tasks": [
@@ -1644,14 +1644,20 @@
         "ALT-0005",
         "ALT-3015"
       ],
-      "status": "todo",
-      "technical_passes": false,
+      "status": "done",
+      "technical_passes": true,
       "engineer_approval_required": true,
       "engineer_approval_status": "pending",
       "passes": false,
-      "evidence_files": [],
-      "updated_at": "2026-04-27T21:26:35Z",
-      "comments": "Implement only controls present in linux_cis.xlsx sheet SERVICES; detected 28 Ensure control rows and 2 group header rows. Stop at ready_for_engineer_review after chapter report."
+      "evidence_files": [
+        "roles/cis_audit/tasks/main.yml",
+        "roles/cis_audit/tasks/services.yml",
+        "reports/lab/SERVICES/chapter_report.md",
+        "PRD.json",
+        "progress.txt"
+      ],
+      "updated_at": "2026-04-30T10:30:00Z",
+      "comments": "Implemented audit-only SERVICES controls from linux_cis.xlsx SERVICES scope (2.1.1-2.2.6), excluding group headers (2.1, 2.2); read-only evidence checks with changed_when=false; no remediation/stop-disable/restart/reboot; OT placeholders retained; PRD validation executed via scripts/validate_prd.sh."
     },
     {
       "task_id": "ALT-2016",
