@@ -1490,14 +1490,20 @@
         "ALT-0005",
         "ALT-3013"
       ],
-      "status": "todo",
-      "technical_passes": false,
+      "status": "ready_for_engineer_review",
+      "technical_passes": true,
       "engineer_approval_required": true,
       "engineer_approval_status": "pending",
       "passes": false,
-      "evidence_files": [],
-      "updated_at": "2026-04-27T21:26:35Z",
-      "comments": "Implement only controls present in linux_cis.xlsx sheet Network Kernel Modules; detected 15 Ensure control rows and 2 group header rows. Stop at ready_for_engineer_review after chapter report."
+      "evidence_files": [
+        "roles/cis_audit/tasks/main.yml",
+        "roles/cis_audit/tasks/network_kernel_modules.yml",
+        "reports/lab/NetworkKernelModules/chapter_report.md",
+        "PRD.json",
+        "progress.txt"
+      ],
+      "updated_at": "2026-04-30T10:10:00Z",
+      "comments": "Implemented audit-only Network Kernel Modules controls from linux_cis.xlsx sheet Network Kernel Modules (3.2.1-3.3.11), excluding group headers (3.2 and 3.3); added read-only evidence collection with changed_when=false and no remediation/restart/reboot actions; retained OT placeholders for approved IPv6 forwarding and network sysctl/module exceptions; validation via scripts/validate_prd.sh executed locally."
     },
     {
       "task_id": "ALT-2014",

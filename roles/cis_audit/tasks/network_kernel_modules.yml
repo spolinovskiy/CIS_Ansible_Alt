@@ -1,0 +1,160 @@
+---
+- name: Audit | Network Kernel Modules | Define control mappings and placeholders
+  ansible.builtin.set_fact:
+    cis_nkm_module_controls:
+      - { control_id: "3.2.1", module: "dccp", title: "Ensure dccp kernel module is not available" }
+      - { control_id: "3.2.2", module: "tipc", title: "Ensure tipc kernel module is not available" }
+      - { control_id: "3.2.3", module: "rds", title: "Ensure rds kernel module is not available" }
+      - { control_id: "3.2.4", module: "sctp", title: "Ensure sctp kernel module is not available" }
+    cis_nkm_sysctl_controls:
+      - { control_id: "3.3.1", title: "Ensure ip forwarding is disabled", key: "net.ipv4.ip_forward", expected: "0" }
+      - { control_id: "3.3.1", title: "Ensure ip forwarding is disabled", key: "net.ipv6.conf.all.forwarding", expected: "0" }
+      - { control_id: "3.3.2", title: "Ensure packet redirect sending is disabled", key: "net.ipv4.conf.all.send_redirects", expected: "0" }
+      - { control_id: "3.3.2", title: "Ensure packet redirect sending is disabled", key: "net.ipv4.conf.default.send_redirects", expected: "0" }
+      - { control_id: "3.3.3", title: "Ensure bogus icmp responses are ignored", key: "net.ipv4.icmp_ignore_bogus_error_responses", expected: "1" }
+      - { control_id: "3.3.4", title: "Ensure broadcast icmp requests are ignored", key: "net.ipv4.icmp_echo_ignore_broadcasts", expected: "1" }
+      - { control_id: "3.3.5", title: "Ensure icmp redirects are not accepted", key: "net.ipv4.conf.all.accept_redirects", expected: "0" }
+      - { control_id: "3.3.5", title: "Ensure icmp redirects are not accepted", key: "net.ipv4.conf.default.accept_redirects", expected: "0" }
+      - { control_id: "3.3.6", title: "Ensure secure icmp redirects are not accepted", key: "net.ipv4.conf.all.secure_redirects", expected: "0" }
+      - { control_id: "3.3.6", title: "Ensure secure icmp redirects are not accepted", key: "net.ipv4.conf.default.secure_redirects", expected: "0" }
+      - { control_id: "3.3.7", title: "Ensure reverse path filtering is enabled", key: "net.ipv4.conf.all.rp_filter", expected: "1" }
+      - { control_id: "3.3.7", title: "Ensure reverse path filtering is enabled", key: "net.ipv4.conf.default.rp_filter", expected: "1" }
+      - { control_id: "3.3.8", title: "Ensure source routed packets are not accepted", key: "net.ipv4.conf.all.accept_source_route", expected: "0" }
+      - { control_id: "3.3.8", title: "Ensure source routed packets are not accepted", key: "net.ipv4.conf.default.accept_source_route", expected: "0" }
+      - { control_id: "3.3.8", title: "Ensure source routed packets are not accepted", key: "net.ipv6.conf.all.accept_source_route", expected: "0" }
+      - { control_id: "3.3.8", title: "Ensure source routed packets are not accepted", key: "net.ipv6.conf.default.accept_source_route", expected: "0" }
+      - { control_id: "3.3.9", title: "Ensure suspicious packets are logged", key: "net.ipv4.conf.all.log_martians", expected: "1" }
+      - { control_id: "3.3.9", title: "Ensure suspicious packets are logged", key: "net.ipv4.conf.default.log_martians", expected: "1" }
+      - { control_id: "3.3.10", title: "Ensure tcp syn cookies is enabled", key: "net.ipv4.tcp_syncookies", expected: "1" }
+      - { control_id: "3.3.11", title: "Ensure ipv6 router advertisements are not accepted", key: "net.ipv6.conf.all.accept_ra", expected: "0" }
+      - { control_id: "3.3.11", title: "Ensure ipv6 router advertisements are not accepted", key: "net.ipv6.conf.default.accept_ra", expected: "0" }
+    cis_nkm_missing_information_placeholders:
+      - "MISSING_OT_BASELINE:approved_ipv6_forwarding_policy"
+      - "MISSING_OT_BASELINE:approved_network_kernel_module_exceptions"
+      - "MISSING_OT_BASELINE:approved_network_sysctl_exceptions"
+  changed_when: false
+  tags: [cis, audit, alt, network_kernel_modules, chapter_network_kernel_modules]
+
+- name: Audit | Network Kernel Modules | 3.2.x collect module policy and loaded state
+  ansible.builtin.shell: |
+    modprobe_out="$(modprobe -n -v {{ item.module }} 2>/dev/null || true)"
+    loaded_match="$(lsmod | awk 'NR>1 {print $1}' | grep -E '^{{ item.module | regex_escape }}$' || true)"
+    printf 'module=%s\nmodprobe=%s\nloaded=%s\n' '{{ item.module }}' "$modprobe_out" "$loaded_match"
+  loop: "{{ cis_nkm_module_controls }}"
+  loop_control:
+    label: "{{ item.control_id }}"
+  register: cis_nkm_module_evidence
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_3_2, audit, alt, network_kernel_modules, chapter_network_kernel_modules]
+
+- name: Audit | Network Kernel Modules | 3.3.x collect runtime sysctl values
+  ansible.builtin.command: "sysctl -n {{ item.key }}"
+  loop: "{{ cis_nkm_sysctl_controls }}"
+  loop_control:
+    label: "{{ item.control_id }} :: {{ item.key }}"
+  register: cis_nkm_sysctl_evidence
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_3_3, audit, alt, network_kernel_modules, chapter_network_kernel_modules]
+
+- name: Audit | Network Kernel Modules | Build chapter summary facts
+  ansible.builtin.set_fact:
+    cis_network_kernel_modules_chapter:
+      chapter: "Network Kernel Modules"
+      sheet: "Network Kernel Modules"
+      implemented_controls:
+        - "3.2.1"
+        - "3.2.2"
+        - "3.2.3"
+        - "3.2.4"
+        - "3.3.1"
+        - "3.3.2"
+        - "3.3.3"
+        - "3.3.4"
+        - "3.3.5"
+        - "3.3.6"
+        - "3.3.7"
+        - "3.3.8"
+        - "3.3.9"
+        - "3.3.10"
+        - "3.3.11"
+      skipped_controls: []
+      manual_controls: []
+      blocked_controls: []
+      high_risk_controls:
+        - "3.2.1"
+        - "3.2.2"
+        - "3.2.3"
+        - "3.2.4"
+        - "3.3.1"
+        - "3.3.2"
+        - "3.3.3"
+        - "3.3.4"
+        - "3.3.5"
+        - "3.3.6"
+        - "3.3.7"
+        - "3.3.8"
+        - "3.3.9"
+        - "3.3.10"
+        - "3.3.11"
+      missing_information_placeholders: "{{ cis_nkm_missing_information_placeholders }}"
+      offline_assumptions:
+        - "Audit-only tasks use local sysctl/modprobe/lsmod reads only; no Internet access is required."
+        - "No remediation/restart/reboot/kernel-parameter writes are executed."
+      os_tested:
+        distribution: "{{ ansible_distribution | default('unknown') }}"
+        version: "{{ ansible_distribution_version | default('unknown') }}"
+        kernel: "{{ ansible_kernel | default('unknown') }}"
+      commands:
+        - "modprobe -n -v <module>"
+        - "lsmod"
+        - "sysctl -n <key>"
+      evidence_records:
+        module_controls: "{{ cis_nkm_module_evidence.results | default([]) }}"
+        sysctl_controls: "{{ cis_nkm_sysctl_evidence.results | default([]) }}"
+      result_summary: "{{ cis_nkm_result_summary }}"
+  vars:
+    cis_nkm_result_summary: |
+      {%- set out = [] -%}
+      {%- for c in cis_nkm_module_controls -%}
+      {%- set rec = (cis_nkm_module_evidence.results | default([]) | selectattr('item.control_id','equalto',c.control_id) | list | first | default({})) -%}
+      {%- set text = rec.stdout | default('') -%}
+      {%- set has_policy = ('install /bin/true' in text) or ('install /bin/false' in text) or ('Module ' in text and 'not found' in text) -%}
+      {%- set loaded = (text is search('loaded=.+')) and not (text is search('loaded=$')) -%}
+      {%- set status = 'pass' if (has_policy and not loaded) else ('blocked' if (rec.rc is defined and rec.rc not in [0]) else 'fail') -%}
+      {%- set _ = out.append({'control_id': c.control_id, 'title': c.title, 'status': status}) -%}
+      {%- endfor -%}
+      {%- for control_id, title in [
+        ('3.3.1', 'Ensure ip forwarding is disabled'),
+        ('3.3.2', 'Ensure packet redirect sending is disabled'),
+        ('3.3.3', 'Ensure bogus icmp responses are ignored'),
+        ('3.3.4', 'Ensure broadcast icmp requests are ignored'),
+        ('3.3.5', 'Ensure icmp redirects are not accepted'),
+        ('3.3.6', 'Ensure secure icmp redirects are not accepted'),
+        ('3.3.7', 'Ensure reverse path filtering is enabled'),
+        ('3.3.8', 'Ensure source routed packets are not accepted'),
+        ('3.3.9', 'Ensure suspicious packets are logged'),
+        ('3.3.10', 'Ensure tcp syn cookies is enabled'),
+        ('3.3.11', 'Ensure ipv6 router advertisements are not accepted')
+      ] -%}
+      {%- set recs = (cis_nkm_sysctl_evidence.results | default([]) | selectattr('item.control_id','equalto',control_id) | list) -%}
+      {%- if (recs | length) == 0 -%}
+      {%- set status = 'blocked' -%}
+      {%- else -%}
+      {%- set good = namespace(value=true) -%}
+      {%- set blocked = namespace(value=false) -%}
+      {%- for r in recs -%}
+      {%- if r.rc not in [0] -%}
+      {%- set blocked.value = true -%}
+      {%- elif (r.stdout | default('') | trim) != (r.item.expected | string) -%}
+      {%- set good.value = false -%}
+      {%- endif -%}
+      {%- endfor -%}
+      {%- set status = 'blocked' if blocked.value else ('pass' if good.value else 'fail') -%}
+      {%- endif -%}
+      {%- set _ = out.append({'control_id': control_id, 'title': title, 'status': status}) -%}
+      {%- endfor -%}
+      {{ out }}
+  changed_when: false
+  tags: [cis, audit, alt, network_kernel_modules, chapter_network_kernel_modules]
