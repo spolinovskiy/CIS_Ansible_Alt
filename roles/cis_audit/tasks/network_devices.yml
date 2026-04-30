@@ -1,0 +1,73 @@
+---
+- name: Audit | Network Devices | Define control mappings and placeholders
+  ansible.builtin.set_fact:
+    cis_network_devices_controls:
+      - { control_id: "3.1.1", title: "Ensure IPv6 status is identified (Manual)", command: "sysctl -n net.ipv6.conf.all.disable_ipv6 2>/dev/null", manual: true }
+      - { control_id: "3.1.2", title: "Ensure wireless interfaces are disabled", command: "find /sys/class/net -mindepth 1 -maxdepth 1 -type l -exec test -d '{}/wireless' ';' -print 2>/dev/null", manual: true }
+      - { control_id: "3.1.3", title: "Ensure bluetooth services are not in use", command: "systemctl is-enabled bluetooth.service 2>/dev/null || true", manual: true }
+    cis_network_devices_missing_information_placeholders:
+      - "MISSING_OT_BASELINE:approved_ipv6_enablement_policy"
+      - "MISSING_OT_BASELINE:approved_wireless_interface_allowlist"
+      - "MISSING_OT_BASELINE:approved_bluetooth_service_policy"
+  changed_when: false
+  tags: [cis, audit, alt, network_devices, chapter_network_devices]
+
+- name: Audit | Network Devices | Collect per-control evidence commands
+  ansible.builtin.shell: "{{ item.command }}"
+  loop: "{{ cis_network_devices_controls }}"
+  loop_control:
+    label: "{{ item.control_id }}"
+  register: cis_network_devices_control_evidence
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_3_1_1, cis_3_1_2, cis_3_1_3, audit, alt, network_devices, chapter_network_devices]
+
+- name: Audit | Network Devices | Build chapter summary facts
+  ansible.builtin.set_fact:
+    cis_network_devices_chapter:
+      chapter: "Network Devices"
+      sheet: "Network Devices"
+      implemented_controls:
+        - "3.1.1"
+        - "3.1.2"
+        - "3.1.3"
+      skipped_controls: []
+      manual_controls:
+        - "3.1.1"
+        - "3.1.2"
+        - "3.1.3"
+      blocked_controls: "{{ cis_network_devices_result_summary | selectattr('status', 'equalto', 'blocked') | map(attribute='control_id') | list }}"
+      high_risk_controls:
+        - "3.1.1"
+        - "3.1.2"
+        - "3.1.3"
+      missing_information_placeholders: "{{ cis_network_devices_missing_information_placeholders }}"
+      offline_assumptions:
+        - "Audit-only tasks use local sysctl/find/systemctl reads only; no Internet access is required."
+        - "No remediation, restart, reload, or reboot operations are executed."
+      os_tested:
+        distribution: "{{ ansible_distribution | default('unknown') }}"
+        version: "{{ ansible_distribution_version | default('unknown') }}"
+        kernel: "{{ ansible_kernel | default('unknown') }}"
+      commands: "{{ cis_network_devices_controls | map(attribute='command') | list | unique }}"
+      evidence_records:
+        control_checks: "{{ cis_network_devices_control_evidence.results | default([]) }}"
+      result_summary: "{{ cis_network_devices_result_summary }}"
+  vars:
+    cis_network_devices_result_summary: |
+      {%- set out = [] -%}
+      {%- for c in cis_network_devices_controls -%}
+      {%- set rec = (cis_network_devices_control_evidence.results | default([]) | selectattr('item.control_id','equalto',c.control_id) | list | first | default({})) -%}
+      {%- set rc = rec.rc if (rec.rc is defined) else 999 -%}
+      {%- if rc == 127 -%}
+      {%- set status = 'blocked' -%}
+      {%- elif c.manual -%}
+      {%- set status = 'manual_review_required' -%}
+      {%- else -%}
+      {%- set status = 'blocked' if rc not in [0] else ('pass' if (rec.stdout | default('') | trim | length) > 0 else 'fail') -%}
+      {%- endif -%}
+      {%- set _ = out.append({'control_id': c.control_id, 'title': c.title, 'status': status}) -%}
+      {%- endfor -%}
+      {{ out }}
+  changed_when: false
+  tags: [cis, audit, alt, network_devices, chapter_network_devices]

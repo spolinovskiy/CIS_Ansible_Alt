@@ -79,3 +79,8 @@
   ansible.builtin.include_tasks:
     file: network_kernel_modules.yml
   tags: [cis, audit, alt, network_kernel_modules, chapter_network_kernel_modules]
+
+- name: Audit | Network Devices | Include chapter controls
+  ansible.builtin.include_tasks:
+    file: network_devices.yml
+  tags: [cis, audit, alt, network_devices, chapter_network_devices]
