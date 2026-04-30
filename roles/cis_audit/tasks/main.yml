@@ -64,6 +64,12 @@
     file: time_sync.yml
   tags: [cis, audit, alt, time_sync, chapter_time_sync]
 
+
+- name: Audit | Logging | Include chapter controls
+  ansible.builtin.include_tasks:
+    file: logging.yml
+  tags: [cis, audit, alt, logging, chapter_logging]
+
 - name: Audit | Network Kernel Modules | Include chapter controls
   ansible.builtin.include_tasks:
     file: network_kernel_modules.yml

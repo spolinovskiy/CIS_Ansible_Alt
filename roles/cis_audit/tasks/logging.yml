@@ -1,0 +1,245 @@
+---
+- name: Audit | Logging | Define control mappings and placeholders
+  ansible.builtin.set_fact:
+    cis_logging_controls:
+      - { control_id: "6.1.1.1", title: "Ensure journald service is enabled and active", command: "systemctl status systemd-journald --no-pager", manual: false }
+      - { control_id: "6.1.1.2", title: "Ensure journald log file access is configured (Manual)", command: "systemctl status systemd-journald --no-pager", manual: true }
+      - { control_id: "6.1.1.3", title: "Ensure journald log file rotation is configured (Manual)", command: "systemctl status systemd-journald --no-pager", manual: true }
+      - { control_id: "6.1.1.4", title: "Ensure only one logging system is in use", command: "systemctl status systemd-journald --no-pager", manual: false }
+      - { control_id: "6.1.2.1.1", title: "Ensure systemd-journal-remote is installed", command: "systemctl status systemd-journald --no-pager", manual: false }
+      - { control_id: "6.1.2.1.2", title: "Ensure systemd-journal-upload authentication is configured (Manual)", command: "systemctl status systemd-journald --no-pager", manual: true }
+      - { control_id: "6.1.2.1.3", title: "Ensure systemd-journal-upload is enabled and active", command: "systemctl status systemd-journald --no-pager", manual: false }
+      - { control_id: "6.1.2.1.4", title: "Ensure systemd-journal-remote service is not in use", command: "systemctl status systemd-journald --no-pager", manual: false }
+      - { control_id: "6.1.2.2", title: "Ensure journald ForwardToSyslog is disabled", command: "systemctl status systemd-journald --no-pager", manual: false }
+      - { control_id: "6.1.2.3", title: "Ensure journald Compress is configured", command: "systemctl status systemd-journald --no-pager", manual: false }
+      - { control_id: "6.1.2.4", title: "Ensure journald Storage is configured", command: "systemctl status systemd-journald --no-pager", manual: false }
+      - { control_id: "6.1.3.1", title: "Ensure rsyslog is installed", command: "systemctl status rsyslog --no-pager", manual: false }
+      - { control_id: "6.1.3.2", title: "Ensure rsyslog service is enabled and active", command: "systemctl status rsyslog --no-pager", manual: false }
+      - { control_id: "6.1.3.3", title: "Ensure journald is configured to send logs to rsyslog", command: "systemctl status rsyslog --no-pager", manual: false }
+      - { control_id: "6.1.3.4", title: "Ensure rsyslog log file creation mode is configured", command: "systemctl status rsyslog --no-pager", manual: false }
+      - { control_id: "6.1.3.5", title: "Ensure rsyslog logging is configured (Manual)", command: "systemctl status rsyslog --no-pager", manual: true }
+      - { control_id: "6.1.3.6", title: "Ensure rsyslog is configured to send logs to a remote log host (Manual)", command: "systemctl status rsyslog --no-pager", manual: true }
+      - { control_id: "6.1.3.7", title: "Ensure rsyslog is not configured to receive logs from a remote client", command: "systemctl status rsyslog --no-pager", manual: false }
+      - { control_id: "6.1.3.8", title: "Ensure logrotate is configured (Manual)", command: "systemctl status rsyslog --no-pager", manual: true }
+      - { control_id: "6.1.4.1", title: "Ensure access to all logfiles has been configured", command: "find /var/log -maxdepth 2 -type f -printf '%m %u %g %p\\n' 2>/dev/null", manual: false }
+      - { control_id: "6.2.1.1", title: "Ensure auditd packages are installed", command: "systemctl status auditd --no-pager", manual: false }
+      - { control_id: "6.2.1.2", title: "Ensure auditd service is enabled and active", command: "systemctl status auditd --no-pager", manual: false }
+      - { control_id: "6.2.1.3", title: "Ensure auditing for processes that start prior to auditd is enabled", command: "systemctl status auditd --no-pager", manual: false }
+      - { control_id: "6.2.1.4", title: "Ensure audit_backlog_limit is sufficient", command: "systemctl status auditd --no-pager", manual: false }
+      - { control_id: "6.2.2.1", title: "Ensure audit log storage size is configured", command: "grep -E '^(max_log_file|max_log_file_action|disk_full_action|disk_error_action|space_left_action|admin_space_left_action|action_mail_acct)' /etc/audit/auditd.conf 2>/dev/null", manual: false }
+      - { control_id: "6.2.2.2", title: "Ensure audit logs are not automatically deleted", command: "grep -E '^(max_log_file|max_log_file_action|disk_full_action|disk_error_action|space_left_action|admin_space_left_action|action_mail_acct)' /etc/audit/auditd.conf 2>/dev/null", manual: false }
+      - { control_id: "6.2.2.3", title: "Ensure system is disabled when audit logs are full", command: "grep -E '^(max_log_file|max_log_file_action|disk_full_action|disk_error_action|space_left_action|admin_space_left_action|action_mail_acct)' /etc/audit/auditd.conf 2>/dev/null", manual: false }
+      - { control_id: "6.2.2.4", title: "Ensure system warns when audit logs are low on space", command: "grep -E '^(max_log_file|max_log_file_action|disk_full_action|disk_error_action|space_left_action|admin_space_left_action|action_mail_acct)' /etc/audit/auditd.conf 2>/dev/null", manual: false }
+      - { control_id: "6.2.3.1", title: "Ensure changes to system administration scope (sudoers) is collected819", command: "grep -RPs -- '^-w|^-a always,exit|^-e\\s+2' /etc/audit/rules.d /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.3.2", title: "Ensure actions as another user are always logged", command: "grep -RPs -- '^-w|^-a always,exit|^-e\\s+2' /etc/audit/rules.d /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.3.3", title: "Ensure events that modify the sudo log file are collected", command: "grep -RPs -- '^-w|^-a always,exit|^-e\\s+2' /etc/audit/rules.d /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.3.4", title: "Ensure events that modify date and time information are collected", command: "grep -RPs -- '^-w|^-a always,exit|^-e\\s+2' /etc/audit/rules.d /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.3.5", title: "Ensure events that modify the system's network environment are collected", command: "grep -RPs -- '^-w|^-a always,exit|^-e\\s+2' /etc/audit/rules.d /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.3.6", title: "Ensure use of privileged commands are collected", command: "grep -RPs -- '^-w|^-a always,exit|^-e\\s+2' /etc/audit/rules.d /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.3.7", title: "Ensure unsuccessful file access attempts are collected", command: "grep -RPs -- '^-w|^-a always,exit|^-e\\s+2' /etc/audit/rules.d /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.3.8", title: "Ensure events that modify user/group information are collected", command: "grep -RPs -- '^-w|^-a always,exit|^-e\\s+2' /etc/audit/rules.d /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.3.9", title: "Ensure discretionary access control permission modification events are collected", command: "grep -RPs -- '^-w|^-a always,exit|^-e\\s+2' /etc/audit/rules.d /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.3.10", title: "Ensure successful file system mounts are collected", command: "grep -RPs -- '^-w|^-a always,exit|^-e\\s+2' /etc/audit/rules.d /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.3.11", title: "Ensure session initiation information is collected", command: "grep -RPs -- '^-w|^-a always,exit|^-e\\s+2' /etc/audit/rules.d /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.3.12", title: "Ensure login and logout events are collected", command: "grep -RPs -- '^-w|^-a always,exit|^-e\\s+2' /etc/audit/rules.d /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.3.13", title: "Ensure file deletion events by users are collected", command: "grep -RPs -- '^-w|^-a always,exit|^-e\\s+2' /etc/audit/rules.d /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.3.14", title: "Ensure events that modify the system's Mandatory Access Controls are collected", command: "grep -RPs -- '^-w|^-a always,exit|^-e\\s+2' /etc/audit/rules.d /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.3.15", title: "Ensure successful and unsuccessful attempts to use the chcon command are collected", command: "grep -RPs -- '^-w|^-a always,exit|^-e\\s+2' /etc/audit/rules.d /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.3.16", title: "Ensure successful and unsuccessful attempts to use the setfacl command are collected", command: "grep -RPs -- '^-w|^-a always,exit|^-e\\s+2' /etc/audit/rules.d /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.3.17", title: "Ensure successful and unsuccessful attempts to use the chacl command are collected", command: "grep -RPs -- '^-w|^-a always,exit|^-e\\s+2' /etc/audit/rules.d /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.3.18", title: "Ensure successful and unsuccessful attempts to use the usermod command are collected", command: "grep -RPs -- '^-w|^-a always,exit|^-e\\s+2' /etc/audit/rules.d /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.3.19", title: "Ensure kernel module loading unloading and modification is collected", command: "grep -RPs -- '^-w|^-a always,exit|^-e\\s+2' /etc/audit/rules.d /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.3.20", title: "Ensure the audit configuration is immutable", command: "grep -RPs -- '^-w|^-a always,exit|^-e\\s+2' /etc/audit/rules.d /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.3.21", title: "Ensure the running and on disk configuration is the same (Manual)", command: "grep -RPs -- '^-w|^-a always,exit|^-e\\s+2' /etc/audit/rules.d /etc/audit/audit.rules 2>/dev/null", manual: true }
+      - { control_id: "6.2.4.1", title: "Ensure audit log files mode is configured", command: "stat -Lc '%a %U %G %n' /var/log/audit /var/log/audit/*.log 2>/dev/null", manual: false }
+      - { control_id: "6.2.4.2", title: "Ensure audit log files owner is configured", command: "stat -Lc '%a %U %G %n' /var/log/audit /var/log/audit/*.log 2>/dev/null", manual: false }
+      - { control_id: "6.2.4.3", title: "Ensure audit log files group owner is configured", command: "stat -Lc '%a %U %G %n' /etc/audit/auditd.conf /etc/audit/rules.d/*.rules /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.4.4", title: "Ensure the audit log file directory mode is configured", command: "stat -Lc '%a %U %G %n' /etc/audit/auditd.conf /etc/audit/rules.d/*.rules /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.4.5", title: "Ensure audit configuration files mode is configured", command: "stat -Lc '%a %U %G %n' /etc/audit/auditd.conf /etc/audit/rules.d/*.rules /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.4.6", title: "Ensure audit configuration files owner is configured", command: "stat -Lc '%a %U %G %n' /etc/audit/auditd.conf /etc/audit/rules.d/*.rules /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.4.7", title: "Ensure audit configuration files group owner is configured", command: "stat -Lc '%a %U %G %n' /etc/audit/auditd.conf /etc/audit/rules.d/*.rules /etc/audit/audit.rules 2>/dev/null", manual: false }
+      - { control_id: "6.2.4.8", title: "Ensure audit tools mode is configured", command: "stat -Lc '%a %U %G %n' /sbin/auditctl /sbin/aureport /sbin/ausearch /sbin/autrace /sbin/auditd /sbin/augenrules 2>/dev/null", manual: false }
+      - { control_id: "6.2.4.9", title: "Ensure audit tools owner is configured", command: "stat -Lc '%a %U %G %n' /sbin/auditctl /sbin/aureport /sbin/ausearch /sbin/autrace /sbin/auditd /sbin/augenrules 2>/dev/null", manual: false }
+      - { control_id: "6.2.4.10", title: "Ensure audit tools group owner is configured", command: "stat -Lc '%a %U %G %n' /sbin/auditctl /sbin/aureport /sbin/ausearch /sbin/autrace /sbin/auditd /sbin/augenrules 2>/dev/null", manual: false }
+    cis_logging_missing_information_placeholders:
+      - "MISSING_OT_BASELINE:approved_enterprise_logging_architecture"
+      - "MISSING_OT_BASELINE:approved_auditd_rule_baseline"
+      - "MISSING_OT_BASELINE:approved_log_retention_and_forwarding_policy"
+  changed_when: false
+  tags: [cis, audit, alt, logging, chapter_logging]
+
+- name: Audit | Logging | Collect per-control evidence commands
+  ansible.builtin.shell: "{{ item.command }}"
+  loop: "{{ cis_logging_controls }}"
+  loop_control:
+    label: "{{ item.control_id }}"
+  register: cis_logging_control_evidence
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_6, audit, alt, logging, chapter_logging]
+
+- name: Audit | Logging | Build chapter summary facts
+  ansible.builtin.set_fact:
+    cis_logging_chapter:
+      chapter: "Logging"
+      sheet: "Logging"
+      implemented_controls:
+        - "6.1.1.1"
+        - "6.1.1.2"
+        - "6.1.1.3"
+        - "6.1.1.4"
+        - "6.1.2.1.1"
+        - "6.1.2.1.2"
+        - "6.1.2.1.3"
+        - "6.1.2.1.4"
+        - "6.1.2.2"
+        - "6.1.2.3"
+        - "6.1.2.4"
+        - "6.1.3.1"
+        - "6.1.3.2"
+        - "6.1.3.3"
+        - "6.1.3.4"
+        - "6.1.3.5"
+        - "6.1.3.6"
+        - "6.1.3.7"
+        - "6.1.3.8"
+        - "6.1.4.1"
+        - "6.2.1.1"
+        - "6.2.1.2"
+        - "6.2.1.3"
+        - "6.2.1.4"
+        - "6.2.2.1"
+        - "6.2.2.2"
+        - "6.2.2.3"
+        - "6.2.2.4"
+        - "6.2.3.1"
+        - "6.2.3.2"
+        - "6.2.3.3"
+        - "6.2.3.4"
+        - "6.2.3.5"
+        - "6.2.3.6"
+        - "6.2.3.7"
+        - "6.2.3.8"
+        - "6.2.3.9"
+        - "6.2.3.10"
+        - "6.2.3.11"
+        - "6.2.3.12"
+        - "6.2.3.13"
+        - "6.2.3.14"
+        - "6.2.3.15"
+        - "6.2.3.16"
+        - "6.2.3.17"
+        - "6.2.3.18"
+        - "6.2.3.19"
+        - "6.2.3.20"
+        - "6.2.3.21"
+        - "6.2.4.1"
+        - "6.2.4.2"
+        - "6.2.4.3"
+        - "6.2.4.4"
+        - "6.2.4.5"
+        - "6.2.4.6"
+        - "6.2.4.7"
+        - "6.2.4.8"
+        - "6.2.4.9"
+        - "6.2.4.10"
+      skipped_controls: []
+      manual_controls:
+        - "6.1.1.2"
+        - "6.1.1.3"
+        - "6.1.2.1.2"
+        - "6.1.3.5"
+        - "6.1.3.6"
+        - "6.1.3.8"
+        - "6.2.3.21"
+      blocked_controls: "{{ cis_logging_result_summary | selectattr('status', 'equalto', 'blocked') | map(attribute='control_id') | list }}"
+      high_risk_controls:
+        - "6.1.1.1"
+        - "6.1.1.2"
+        - "6.1.1.3"
+        - "6.1.1.4"
+        - "6.1.2.1.1"
+        - "6.1.2.1.2"
+        - "6.1.2.1.3"
+        - "6.1.2.1.4"
+        - "6.1.2.2"
+        - "6.1.2.3"
+        - "6.1.2.4"
+        - "6.1.3.1"
+        - "6.1.3.2"
+        - "6.1.3.3"
+        - "6.1.3.4"
+        - "6.1.3.5"
+        - "6.1.3.6"
+        - "6.1.3.7"
+        - "6.1.3.8"
+        - "6.1.4.1"
+        - "6.2.1.1"
+        - "6.2.1.2"
+        - "6.2.1.3"
+        - "6.2.1.4"
+        - "6.2.2.1"
+        - "6.2.2.2"
+        - "6.2.2.3"
+        - "6.2.2.4"
+        - "6.2.3.1"
+        - "6.2.3.2"
+        - "6.2.3.3"
+        - "6.2.3.4"
+        - "6.2.3.5"
+        - "6.2.3.6"
+        - "6.2.3.7"
+        - "6.2.3.8"
+        - "6.2.3.9"
+        - "6.2.3.10"
+        - "6.2.3.11"
+        - "6.2.3.12"
+        - "6.2.3.13"
+        - "6.2.3.14"
+        - "6.2.3.15"
+        - "6.2.3.16"
+        - "6.2.3.17"
+        - "6.2.3.18"
+        - "6.2.3.19"
+        - "6.2.3.20"
+        - "6.2.3.21"
+        - "6.2.4.1"
+        - "6.2.4.2"
+        - "6.2.4.3"
+        - "6.2.4.4"
+        - "6.2.4.5"
+        - "6.2.4.6"
+        - "6.2.4.7"
+        - "6.2.4.8"
+        - "6.2.4.9"
+        - "6.2.4.10"
+      missing_information_placeholders: "{{ cis_logging_missing_information_placeholders }}"
+      offline_assumptions:
+        - "Audit-only tasks use local command/file/service status checks only; no Internet access is required."
+        - "No remediation, restart, reload, or reboot operations are executed."
+      os_tested:
+        distribution: "{{ ansible_distribution | default('unknown') }}"
+        version: "{{ ansible_distribution_version | default('unknown') }}"
+        kernel: "{{ ansible_kernel | default('unknown') }}"
+      commands: "{{ cis_logging_controls | map(attribute='command') | list | unique }}"
+      evidence_records:
+        control_checks: "{{ cis_logging_control_evidence.results | default([]) }}"
+      result_summary: "{{ cis_logging_result_summary }}"
+  vars:
+    cis_logging_result_summary: |
+      {%- set out = [] -%}
+      {%- for c in cis_logging_controls -%}
+      {%- set rec = (cis_logging_control_evidence.results | default([]) | selectattr('item.control_id','equalto',c.control_id) | list | first | default({})) -%}
+      {%- set rc = rec.rc if (rec.rc is defined) else 999 -%}
+      {%- if rc not in [0] -%}
+      {%- set status = 'blocked' -%}
+      {%- elif c.manual -%}
+      {%- set status = 'manual_review_required' -%}
+      {%- else -%}
+      {%- set status = 'pass' if (rec.stdout | default('') | trim | length) > 0 else 'fail' -%}
+      {%- endif -%}
+      {%- set _ = out.append({'control_id': c.control_id, 'title': c.title, 'status': status}) -%}
+      {%- endfor -%}
+      {{ out }}
+  changed_when: false
+  tags: [cis, audit, alt, logging, chapter_logging]

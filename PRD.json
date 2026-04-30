@@ -1568,14 +1568,18 @@
         "ALT-0005",
         "ALT-3014"
       ],
-      "status": "todo",
-      "technical_passes": false,
+      "status": "ready_for_engineer_review",
+      "technical_passes": true,
       "engineer_approval_required": true,
       "engineer_approval_status": "pending",
       "passes": false,
-      "evidence_files": [],
-      "updated_at": "2026-04-27T21:26:35Z",
-      "comments": "Implement only controls present in linux_cis.xlsx sheet Logging; detected 59 Ensure control rows and 11 group header rows. Stop at ready_for_engineer_review after chapter report."
+      "evidence_files": [
+        "roles/cis_audit/tasks/main.yml",
+        "roles/cis_audit/tasks/logging.yml",
+        "reports/lab/Logging/chapter_report.md"
+      ],
+      "updated_at": "2026-04-30T04:12:01Z",
+      "comments": "Implemented audit-only Logging chapter controls from linux_cis.xlsx scope lock; no remediation/restart/reboot; changed_when:false on audit checks; OT placeholders retained; awaiting engineer approval."
     },
     {
       "task_id": "ALT-2015",
