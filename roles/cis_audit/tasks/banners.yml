@@ -1,0 +1,156 @@
+---
+- name: Audit | Banners | Load ALT OS path map
+  ansible.builtin.include_vars:
+    file: "{{ playbook_dir }}/../data/os_map/paths.yml"
+    name: cis_os_paths
+  changed_when: false
+  tags: [cis, audit, alt, banners, chapter_banners]
+
+- name: Audit | Banners | Define chapter defaults and placeholders
+  ansible.builtin.set_fact:
+    cis_banners_motd_path: "{{ cis_os_paths.paths.banners.motd.path | default('/etc/motd') }}"
+    cis_banners_issue_path: "{{ cis_os_paths.paths.banners.issue.path | default('/etc/issue') }}"
+    cis_banners_issue_net_path: "{{ cis_os_paths.paths.banners.issue_net.path | default('/etc/issue.net') }}"
+    cis_banners_missing_information_placeholders:
+      - "MISSING_OT_BASELINE:approved_local_banner_content_policy"
+      - "MISSING_OT_BASELINE:approved_remote_banner_content_policy"
+  changed_when: false
+  tags: [cis, audit, alt, banners, chapter_banners]
+
+- name: Audit | Banners | 1.6.1 collect /etc/motd content
+  ansible.builtin.command: "cat {{ cis_banners_motd_path }}"
+  register: cis_1_6_1_motd_content
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_1_6_1, audit, alt, banners, chapter_banners]
+
+- name: Audit | Banners | 1.6.2 collect /etc/issue content
+  ansible.builtin.command: "cat {{ cis_banners_issue_path }}"
+  register: cis_1_6_2_issue_content
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_1_6_2, audit, alt, banners, chapter_banners]
+
+- name: Audit | Banners | 1.6.3 collect /etc/issue.net content
+  ansible.builtin.command: "cat {{ cis_banners_issue_net_path }}"
+  register: cis_1_6_3_issue_net_content
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_1_6_3, audit, alt, banners, chapter_banners]
+
+- name: Audit | Banners | 1.6.4 stat /etc/motd
+  ansible.builtin.stat:
+    path: "{{ cis_banners_motd_path }}"
+  register: cis_1_6_4_motd_stat
+  changed_when: false
+  tags: [cis, cis_1_6_4, audit, alt, banners, chapter_banners]
+
+- name: Audit | Banners | 1.6.5 stat /etc/issue
+  ansible.builtin.stat:
+    path: "{{ cis_banners_issue_path }}"
+  register: cis_1_6_5_issue_stat
+  changed_when: false
+  tags: [cis, cis_1_6_5, audit, alt, banners, chapter_banners]
+
+- name: Audit | Banners | 1.6.6 stat /etc/issue.net
+  ansible.builtin.stat:
+    path: "{{ cis_banners_issue_net_path }}"
+  register: cis_1_6_6_issue_net_stat
+  changed_when: false
+  tags: [cis, cis_1_6_6, audit, alt, banners, chapter_banners]
+
+- name: Audit | Banners | Build chapter summary facts
+  ansible.builtin.set_fact:
+    cis_banners_chapter:
+      chapter: Banners
+      sheet: Banners
+      implemented_controls:
+        - "1.6.1"
+        - "1.6.2"
+        - "1.6.3"
+        - "1.6.4"
+        - "1.6.5"
+        - "1.6.6"
+      skipped_controls: []
+      manual_controls:
+        - "1.6.1"
+        - "1.6.2"
+        - "1.6.3"
+      blocked_controls: "{{ cis_banners_result_summary | selectattr('status', 'equalto', 'blocked') | map(attribute='control_id') | list }}"
+      high_risk_controls:
+        - "1.6.1"
+        - "1.6.2"
+        - "1.6.3"
+        - "1.6.4"
+        - "1.6.5"
+        - "1.6.6"
+      missing_information_placeholders: "{{ cis_banners_missing_information_placeholders }}"
+      offline_assumptions:
+        - "Audit-only tasks use local file reads and metadata checks only; no Internet access is required."
+        - "No remediation, service restart, or reboot operations are executed."
+      os_tested:
+        distribution: "{{ ansible_distribution | default('unknown') }}"
+        version: "{{ ansible_distribution_version | default('unknown') }}"
+        kernel: "{{ ansible_kernel | default('unknown') }}"
+      commands:
+        - "cat {{ cis_banners_motd_path }}"
+        - "cat {{ cis_banners_issue_path }}"
+        - "cat {{ cis_banners_issue_net_path }}"
+        - "stat {{ cis_banners_motd_path }}"
+        - "stat {{ cis_banners_issue_path }}"
+        - "stat {{ cis_banners_issue_net_path }}"
+      evidence_records:
+        - control_id: "1.6.1"
+          title: "Ensure message of the day is configured properly"
+          status: "{{ 'manual' if cis_1_6_1_motd_content.rc in [0, 1] else 'blocked' }}"
+          register: "cis_1_6_1_motd_content"
+          findings: "{{ cis_1_6_1_motd_content.stdout_lines | default([]) }}"
+          placeholders:
+            - "MISSING_OT_BASELINE:approved_local_banner_content_policy"
+        - control_id: "1.6.2"
+          title: "Ensure local login warning banner is configured properly"
+          status: "{{ 'manual' if cis_1_6_2_issue_content.rc in [0, 1] else 'blocked' }}"
+          register: "cis_1_6_2_issue_content"
+          findings: "{{ cis_1_6_2_issue_content.stdout_lines | default([]) }}"
+          placeholders:
+            - "MISSING_OT_BASELINE:approved_local_banner_content_policy"
+        - control_id: "1.6.3"
+          title: "Ensure remote login warning banner is configured properly"
+          status: "{{ 'manual' if cis_1_6_3_issue_net_content.rc in [0, 1] else 'blocked' }}"
+          register: "cis_1_6_3_issue_net_content"
+          findings: "{{ cis_1_6_3_issue_net_content.stdout_lines | default([]) }}"
+          placeholders:
+            - "MISSING_OT_BASELINE:approved_remote_banner_content_policy"
+        - control_id: "1.6.4"
+          title: "Ensure access to /etc/motd is configured"
+          status: "{{ 'pass' if (cis_1_6_4_motd_stat.stat.exists | default(false) and cis_1_6_4_motd_stat.stat.pw_name == 'root' and cis_1_6_4_motd_stat.stat.gr_name == 'root' and (cis_1_6_4_motd_stat.stat.mode | default('')) is match('^0?[0-6]44$')) else ('blocked' if not (cis_1_6_4_motd_stat.stat.exists | default(false)) else 'fail') }}"
+          register: "cis_1_6_4_motd_stat"
+        - control_id: "1.6.5"
+          title: "Ensure access to /etc/issue is configured"
+          status: "{{ 'pass' if (cis_1_6_5_issue_stat.stat.exists | default(false) and cis_1_6_5_issue_stat.stat.pw_name == 'root' and cis_1_6_5_issue_stat.stat.gr_name == 'root' and (cis_1_6_5_issue_stat.stat.mode | default('')) is match('^0?[0-6]44$')) else ('blocked' if not (cis_1_6_5_issue_stat.stat.exists | default(false)) else 'fail') }}"
+          register: "cis_1_6_5_issue_stat"
+        - control_id: "1.6.6"
+          title: "Ensure access to /etc/issue.net is configured"
+          status: "{{ 'pass' if (cis_1_6_6_issue_net_stat.stat.exists | default(false) and cis_1_6_6_issue_net_stat.stat.pw_name == 'root' and cis_1_6_6_issue_net_stat.stat.gr_name == 'root' and (cis_1_6_6_issue_net_stat.stat.mode | default('')) is match('^0?[0-6]44$')) else ('blocked' if not (cis_1_6_6_issue_net_stat.stat.exists | default(false)) else 'fail') }}"
+          register: "cis_1_6_6_issue_net_stat"
+      result_summary:
+        - control_id: "1.6.1"
+          title: "Ensure message of the day is configured properly"
+          status: "{{ 'manual_review_required' if cis_1_6_1_motd_content.rc in [0, 1] else 'blocked' }}"
+        - control_id: "1.6.2"
+          title: "Ensure local login warning banner is configured properly"
+          status: "{{ 'manual_review_required' if cis_1_6_2_issue_content.rc in [0, 1] else 'blocked' }}"
+        - control_id: "1.6.3"
+          title: "Ensure remote login warning banner is configured properly"
+          status: "{{ 'manual_review_required' if cis_1_6_3_issue_net_content.rc in [0, 1] else 'blocked' }}"
+        - control_id: "1.6.4"
+          title: "Ensure access to /etc/motd is configured"
+          status: "{{ 'pass' if (cis_1_6_4_motd_stat.stat.exists | default(false) and cis_1_6_4_motd_stat.stat.pw_name == 'root' and cis_1_6_4_motd_stat.stat.gr_name == 'root' and (cis_1_6_4_motd_stat.stat.mode | default('')) is match('^0?[0-6]44$')) else ('blocked' if not (cis_1_6_4_motd_stat.stat.exists | default(false)) else 'fail') }}"
+        - control_id: "1.6.5"
+          title: "Ensure access to /etc/issue is configured"
+          status: "{{ 'pass' if (cis_1_6_5_issue_stat.stat.exists | default(false) and cis_1_6_5_issue_stat.stat.pw_name == 'root' and cis_1_6_5_issue_stat.stat.gr_name == 'root' and (cis_1_6_5_issue_stat.stat.mode | default('')) is match('^0?[0-6]44$')) else ('blocked' if not (cis_1_6_5_issue_stat.stat.exists | default(false)) else 'fail') }}"
+        - control_id: "1.6.6"
+          title: "Ensure access to /etc/issue.net is configured"
+          status: "{{ 'pass' if (cis_1_6_6_issue_net_stat.stat.exists | default(false) and cis_1_6_6_issue_net_stat.stat.pw_name == 'root' and cis_1_6_6_issue_net_stat.stat.gr_name == 'root' and (cis_1_6_6_issue_net_stat.stat.mode | default('')) is match('^0?[0-6]44$')) else ('blocked' if not (cis_1_6_6_issue_net_stat.stat.exists | default(false)) else 'fail') }}"
+  changed_when: false
+  tags: [cis, audit, alt, banners, chapter_banners]

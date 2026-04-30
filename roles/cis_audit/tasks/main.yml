@@ -9,6 +9,11 @@
     file: bootloader.yml
   tags: [cis, audit, alt, bootloader, chapter_bootloader]
 
+- name: Audit | Banners | Include chapter controls
+  ansible.builtin.include_tasks:
+    file: banners.yml
+  tags: [cis, audit, alt, banners, chapter_banners]
+
 - name: Audit | PAM | Include chapter controls
   ansible.builtin.include_tasks:
     file: pam.yml
