@@ -84,3 +84,8 @@
   ansible.builtin.include_tasks:
     file: network_devices.yml
   tags: [cis, audit, alt, network_devices, chapter_network_devices]
+
+- name: Audit | Packages | Include chapter controls
+  ansible.builtin.include_tasks:
+    file: packages.yml
+  tags: [cis, audit, alt, packages, chapter_packages]

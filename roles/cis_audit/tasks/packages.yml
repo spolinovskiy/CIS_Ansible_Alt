@@ -1,0 +1,73 @@
+---
+- name: Audit | Packages | Define control mappings and OT placeholders
+  ansible.builtin.set_fact:
+    cis_packages_controls:
+      - { control_id: "1.2.1.1", title: "Ensure GPG keys are configured (Manual)", command: "rpm -qa 'gpg-pubkey*' 2>/dev/null", manual: true }
+      - { control_id: "1.2.1.2", title: "Ensure package manager repositories are configured (Manual)", command: "sh -c \"ls -1 /etc/apt/sources.list /etc/apt/sources.list.d /etc/apt/apt.conf /etc/apt/apt.conf.d /etc/yum.repos.d 2>/dev/null || true\"", manual: true }
+      - { control_id: "1.2.2.1", title: "Ensure updates, patches, and additional security software are installed (Manual)", command: "rpm -qa --last 2>/dev/null | head -n 50", manual: true }
+    cis_packages_missing_information_placeholders:
+      - "MISSING_OT_BASELINE:approved_package_source_policy"
+      - "MISSING_OT_BASELINE:approved_offline_repository_baseline"
+      - "MISSING_OT_BASELINE:approved_patch_window_and_exception_process"
+  changed_when: false
+  tags: [cis, audit, alt, packages, chapter_packages]
+
+- name: Audit | Packages | Collect per-control evidence commands
+  ansible.builtin.shell: "{{ item.command }}"
+  loop: "{{ cis_packages_controls }}"
+  loop_control:
+    label: "{{ item.control_id }}"
+  register: cis_packages_control_evidence
+  changed_when: false
+  failed_when: false
+  tags: [cis, cis_1_2, audit, alt, packages, chapter_packages]
+
+- name: Audit | Packages | Build chapter summary facts
+  ansible.builtin.set_fact:
+    cis_packages_chapter:
+      chapter: "Packages"
+      sheet: "Packages"
+      implemented_controls:
+        - "1.2.1.1"
+        - "1.2.1.2"
+        - "1.2.2.1"
+      skipped_controls: []
+      manual_controls:
+        - "1.2.1.1"
+        - "1.2.1.2"
+        - "1.2.2.1"
+      blocked_controls: "{{ cis_packages_result_summary | selectattr('status', 'equalto', 'blocked') | map(attribute='control_id') | list }}"
+      high_risk_controls:
+        - "1.2.1.1"
+        - "1.2.1.2"
+        - "1.2.2.1"
+      missing_information_placeholders: "{{ cis_packages_missing_information_placeholders }}"
+      offline_assumptions:
+        - "Audit-only tasks use local rpm/filesystem reads only; no Internet access is required."
+        - "No remediation, package install/remove/upgrade, service restart, or reboot operations are executed."
+      os_tested:
+        distribution: "{{ ansible_distribution | default('unknown') }}"
+        version: "{{ ansible_distribution_version | default('unknown') }}"
+        kernel: "{{ ansible_kernel | default('unknown') }}"
+      commands: "{{ cis_packages_controls | map(attribute='command') | list | unique }}"
+      evidence_records:
+        control_checks: "{{ cis_packages_control_evidence.results | default([]) }}"
+      result_summary: "{{ cis_packages_result_summary }}"
+  vars:
+    cis_packages_result_summary: |
+      {%- set out = [] -%}
+      {%- for c in cis_packages_controls -%}
+      {%- set rec = (cis_packages_control_evidence.results | default([]) | selectattr('item.control_id','equalto',c.control_id) | list | first | default({})) -%}
+      {%- set rc = rec.rc if (rec.rc is defined) else 999 -%}
+      {%- if rc == 127 -%}
+      {%- set status = 'blocked' -%}
+      {%- elif c.manual -%}
+      {%- set status = 'manual_review_required' -%}
+      {%- else -%}
+      {%- set status = 'blocked' -%}
+      {%- endif -%}
+      {%- set _ = out.append({'control_id': c.control_id, 'title': c.title, 'status': status}) -%}
+      {%- endfor -%}
+      {{ out }}
+  changed_when: false
+  tags: [cis, audit, alt, packages, chapter_packages]
